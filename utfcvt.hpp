@@ -10,82 +10,116 @@
 #include <string>
 
 #ifdef _MSC_VER
-#include <intrin.h>
+#  include <intrin.h>
 #endif
 
-#if __cplusplus < 201103L
-#define utfcvt_compiler_cxx11  0
+/*
+ * C++XX
+ */
+
+#if __cplusplus >= 201103L
+#  define utfcvt_compiler_cxx11  1
 #else  /* C++11 */
-#define utfcvt_compiler_cxx11  1
+#  define utfcvt_compiler_cxx11  0
 #endif
-#if __cplusplus < 202002L
-#define utfcvt_compiler_cxx20  0
+
+#if __cplusplus >= 202002L
+#  define utfcvt_compiler_cxx20  1
 #else  /* C++20 */
-#define utfcvt_compiler_cxx20  1
+#  define utfcvt_compiler_cxx20  0
+#endif
+
+/*
+ * char / wchar / char8_t / char16_t / char32_t
+ */
+#define utfcvt_compiler_cxx_char  1
+#define utfcvt_compiler_cxx_wchar  1
+
+#if __cpp_char8_t >= 201811L
+#  define utfcvt_compiler_cxx_char8  1
+#else
+#  define utfcvt_compiler_cxx_char8  0
+#endif
+
+#if (utfcvt_compiler_cxx11 ||                     \
+     (defined(_MSC_VER) && _MSC_VER >= 1900) ||   \
+     defined(__clang__) ||                        \
+     0)
+#  define utfcvt_compiler_cxx_char16  1
+#  define utfcvt_compiler_cxx_char32  1
+#else
+#  define utfcvt_compiler_cxx_char16  0
+#  define utfcvt_compiler_cxx_char32  0
+#endif
+
+#ifndef utfcvt_compiler_char
+#  define utfcvt_compiler_char  utfcvt_compiler_cxx_char
+#endif
+#ifndef utfcvt_compiler_wchar
+#  define utfcvt_compiler_wchar  utfcvt_compiler_cxx_wchar
+#endif
+#ifndef utfcvt_compiler_char8
+#  define utfcvt_compiler_char8  utfcvt_compiler_cxx_char8
+#endif
+#ifndef utfcvt_compiler_char16
+#  define utfcvt_compiler_char16  utfcvt_compiler_cxx_char16
+#endif
+#ifndef utfcvt_compiler_char32
+#  define utfcvt_compiler_char32  utfcvt_compiler_cxx_char16
+#endif
+
+#define utfcvt_compiler_cxx_string  utfcvt_compiler_cxx_char
+#define utfcvt_compiler_cxx_wstring  utfcvt_compiler_cxx_wchar
+#define utfcvt_compiler_cxx_u8string  utfcvt_compiler_cxx_char8
+#define utfcvt_compiler_cxx_u16string  utfcvt_compiler_cxx_char16
+#define utfcvt_compiler_cxx_u32string  utfcvt_compiler_cxx_char32
+
+#ifndef utfcvt_compiler_string
+#  define utfcvt_compiler_string  utfcvt_compiler_cxx_string
+#endif
+#ifndef utfcvt_compiler_wstring
+#  define utfcvt_compiler_wstring  utfcvt_compiler_cxx_wstring
+#endif
+#ifndef utfcvt_compiler_u8string
+#  define utfcvt_compiler_u8string  utfcvt_compiler_cxx_u8string
+#endif
+#ifndef utfcvt_compiler_u16string
+#  define utfcvt_compiler_u16string  utfcvt_compiler_cxx_u16string
+#endif
+#ifndef utfcvt_compiler_u32string
+#  define utfcvt_compiler_u32string  utfcvt_compiler_cxx_u32string
 #endif
 
 /*
  * clz
  */
-#if utfcvt_compiler_cxx20
-#  include <bit>
-#  define utfcvt_compiler_clz 1
-#else
-#  if defined(__has_builtin)
-#    if __has_builtin(__builtin_clz)
-#      define utfcvt_compiler_builtin_clz  1
+#ifndef utfcvt_compiler_clz
+#  if utfcvt_compiler_cxx20
+#    include <bit>
+#    define utfcvt_compiler_clz 1
+#  else
+#    if defined(__has_builtin)
+#      if __has_builtin(__builtin_clz)
+#        define utfcvt_compiler_builtin_clz  1
+#      endif
+#      if __has_builtin(__builtin_ia32_lzcnt_u32)
+#        define utfcvt_compiler_builtin_ia32_lzcnt_u32  1
+#      endif
+#    endif /* __has_builtin */
+#    ifdef _MSC_VER
+#      define utfcvt_compiler_bsr  1
+#    endif /* VC++ */
+#    if (0 ||                                                 \
+         defined(utfcvt_compiler_builtin_clz) ||              \
+         defined(utfcvt_compiler_builtin_ia32_lzcnt_u32) ||   \
+         defined(utfcvt_compiler_bsr) ||                      \
+         0)
+#      define utfcvt_compiler_clz  1
 #    endif
-#    if __has_builtin(__builtin_ia32_lzcnt_u32)
-#      define utfcvt_compiler_builtin_ia32_lzcnt_u32  1
-#    endif
-#  endif /* __has_builtin */
-#  ifdef _MSC_VER
-#    define utfcvt_compiler_bsr  1
-#  endif /* VC++ */
-#  if (0 ||                                                 \
-       defined(utfcvt_compiler_builtin_clz) ||              \
-       defined(utfcvt_compiler_builtin_ia32_lzcnt_u32) ||   \
-       defined(utfcvt_compiler_bsr) ||                      \
-       0)
-#    define utfcvt_compiler_clz  1
 #  endif
 #endif
 #ifndef utfcvt_compiler_clz
-#define utfcvt_compiler_clz  0
-#endif
-
-/*
- * char/wchar
- */
-#define utfcvt_compiler_char   1
-#define utfcvt_compiler_wchar  1
-
-/*
- * char8_t / u8string
- */
-#if __cpp_char8_t >= 201811L
-#define utfcvt_compiler_char8  1
-#endif /* char8_t */
-#ifndef utfcvt_compiler_char8
-#define utfcvt_compiler_char8  0
-#endif
-
-/*
- * char16_t / u16string
- * char32_t / u32string
- */
-#if (utfcvt_compiler_cxx11 ||                   \
-     (defined(_MSC_VER) && _MSC_VER >= 1900) || \
-     defined(__clang__) ||                      \
-     0)
-#define utfcvt_compiler_char16  1
-#define utfcvt_compiler_char32  1
-#endif /* char16_t / char32_t */
-#ifndef utfcvt_compiler_char16
-#define utfcvt_compiler_char16  0
-#endif
-#ifndef utfcvt_compiler_char32
-#define utfcvt_compiler_char32  0
+#  define utfcvt_compiler_clz  0
 #endif
 
 /*
@@ -116,29 +150,31 @@ namespace utfcvt
 
     template <typename sT> size_t utflen(sT* s);
 
+#if utfcvt_compiler_string
     template <typename sT> std::string to_string(sT s);
     template <typename iT> std::string to_string(iT s, iT e);
     template <typename sT> std::string to_string(sT* s, size_t n);
-
-#if utfcvt_compiler_char8
-    template <typename sT> std::u8string to_u8string(sT s);
-    template <typename iT> std::u8string to_u8string(iT s, iT e);
-    template <typename sT> std::u8string to_u8string(sT* s, size_t n);
 #endif
 
-#if utfcvt_compiler_wchar
+#if utfcvt_compiler_wstring
     template <typename sT> std::wstring to_wstring(sT s);
     template <typename iT> std::wstring to_wstring(iT s, iT e);
     template <typename sT> std::wstring to_wstring(sT* s, size_t n);
 #endif
 
-#if utfcvt_compiler_char16
+#if utfcvt_compiler_u8string
+    template <typename sT> std::u8string to_u8string(sT s);
+    template <typename iT> std::u8string to_u8string(iT s, iT e);
+    template <typename sT> std::u8string to_u8string(sT* s, size_t n);
+#endif
+
+#if utfcvt_compiler_u16string
     template <typename sT> std::u16string to_u16string(sT s);
     template <typename iT> std::u16string to_u16string(iT s, iT e);
     template <typename sT> std::u16string to_u16string(sT* s, size_t n);
 #endif
 
-#if utfcvt_compiler_char32
+#if utfcvt_compiler_u32string
     template <typename sT> std::u32string to_u32string(sT s);
     template <typename iT> std::u32string to_u32string(iT s, iT e);
     template <typename sT> std::u32string to_u32string(sT* s, size_t n);
@@ -763,19 +799,19 @@ namespace utfcvt
 
         template <typename T> struct data_type;
 
-#if utfcvt_compiler_char
+#if utfcvt_compiler_cxx_char
         template <> struct data_type<char> : binary_type<char> {};
 #endif
-#if utfcvt_compiler_char8
-        template <> struct data_type<char8_t> : binary_type<char8_t> {};
-#endif
-#if utfcvt_compiler_wchar
+#if utfcvt_compiler_cxx_wchar
         template <> struct data_type<wchar_t> : binary_type<wchar_t> {};
 #endif
-#if utfcvt_compiler_char16
+#if utfcvt_compiler_cxx_char8
+        template <> struct data_type<char8_t> : binary_type<char8_t> {};
+#endif
+#if utfcvt_compiler_cxx_char16
         template <> struct data_type<char16_t> : binary_type<char16_t> {};
 #endif
-#if utfcvt_compiler_char32
+#if utfcvt_compiler_cxx_char32
         template <> struct data_type<char32_t> : binary_type<char32_t> {};
 #endif
 
@@ -937,6 +973,8 @@ namespace utfcvt
         return utf::length(s);
     }
 
+#if utfcvt_compiler_string
+
     template <typename sT>
     inline std::string to_string(sT s)
     {
@@ -964,37 +1002,8 @@ namespace utfcvt
         return d;
     }
 
-#if utfcvt_compiler_char8
-
-    template <typename sT>
-    inline std::u8string to_u8string(sT s)
-    {
-        std::u8string d;
-
-        utf::cvt(d, s);
-        return d;
-    }
-
-    template <typename iT>
-    inline std::u8string to_u8string(iT s, iT e)
-    {
-        std::u8string d;
-
-        utf::cvt(d, s, e);
-        return d;
-    }
-
-    template <typename sT>
-    inline std::u8string to_u8string(sT* s, size_t n)
-    {
-        std::u8string d;
-
-        utf::cvt(d, s, n);
-        return d;
-    }
-
-#endif /* utfcvt_compiler_char8 */
-#if utfcvt_compiler_wchar
+#endif /* utfcvt_compiler_string */
+#if utfcvt_compiler_wstring
 
     template <typename sT>
     inline std::wstring to_wstring(sT s)
@@ -1023,8 +1032,38 @@ namespace utfcvt
         return d;
     }
 
-#endif /* utfcvt_compiler_wchar */
-#if utfcvt_compiler_char16
+#endif /* utfcvt_compiler_wstring */
+#if utfcvt_compiler_u8string
+
+    template <typename sT>
+    inline std::u8string to_u8string(sT s)
+    {
+        std::u8string d;
+
+        utf::cvt(d, s);
+        return d;
+    }
+
+    template <typename iT>
+    inline std::u8string to_u8string(iT s, iT e)
+    {
+        std::u8string d;
+
+        utf::cvt(d, s, e);
+        return d;
+    }
+
+    template <typename sT>
+    inline std::u8string to_u8string(sT* s, size_t n)
+    {
+        std::u8string d;
+
+        utf::cvt(d, s, n);
+        return d;
+    }
+
+#endif /* utfcvt_compiler_u8string */
+#if utfcvt_compiler_u16string
 
     template <typename sT>
     inline std::u16string to_u16string(sT s)
@@ -1053,8 +1092,8 @@ namespace utfcvt
         return d;
     }
 
-#endif /* utfcvt_compiler_char16 */
-#if utfcvt_compiler_char32
+#endif /* utfcvt_compiler_u16string */
+#if utfcvt_compiler_u32string
 
     template <typename sT>
     inline std::u32string to_u32string(sT s)
@@ -1083,7 +1122,7 @@ namespace utfcvt
         return d;
     }
 
-#endif /* utfcvt_compiler_char32 */
+#endif /* utfcvt_compiler_u32string */
 
     /*
      * utfcvt_getcres
@@ -2584,9 +2623,10 @@ namespace utfcvt
     } //utfcvtimpl
 } // utfcvt
 
-// ----------------------------------------------------------------------------
+///////////////////
 // Local Variables:
 // c-basic-offset: 4
 // indent-tabs-mode: nil
 // tab-width: 4
 // End:
+///////
