@@ -91,12 +91,33 @@
 #endif
 
 /*
+ * bsr
+ */
+#ifndef utfcvt_compiler_bsr
+#  if defined(__GNUC__) && (defined(__x86__) || defined(__x86_64))
+#    define utfcvt_compiler_bsr_gnu_asm  1
+#  endif
+#  ifdef _MSC_VER
+#    define utfcvt_compiler_bsr_msvc  1
+#  endif /* VC++ */
+#  if (0 ||                                     \
+       defined(utfcvt_compiler_bsr_gnu_asm) ||  \
+       defined(utfcvt_compiler_bsr_msvc) ||     \
+       0)
+#    define utfcvt_compiler_bsr  1
+#  endif
+#endif
+#ifndef utfcvt_compiler_bsr
+#  define utfcvt_compiler_bsr  0
+#endif
+
+/*
  * clz
  */
 #ifndef utfcvt_compiler_clz
 #  if utfcvt_compiler_cxx20
 #    include <bit>
-#    define utfcvt_compiler_clz 1
+#    define utfcvt_compiler_clz  1
 #  else
 #    if defined(__has_builtin)
 #      if __has_builtin(__builtin_clz)
@@ -106,9 +127,6 @@
 #        define utfcvt_compiler_builtin_ia32_lzcnt_u32  1
 #      endif
 #    endif /* __has_builtin */
-#    ifdef _MSC_VER
-#      define utfcvt_compiler_bsr  1
-#    endif /* VC++ */
 #    if (0 ||                                                 \
          defined(utfcvt_compiler_builtin_clz) ||              \
          defined(utfcvt_compiler_builtin_ia32_lzcnt_u32) ||   \
@@ -789,6 +807,7 @@ namespace utfcvt
     {
         template <typename T> int clzN(T x);
         template <typename T> int clz32(T t);
+        template <typename T> int bsr32(T t);
 
         template <typename T>
         struct binary_type
@@ -1312,7 +1331,7 @@ namespace utfcvt
 
     /* getcodelen */
 
-#if !utfcvt_compiler_clz
+#if !(utfcvt_compiler_bsr || utfcvt_compiler_clz)
 
     template <typename cT>
     size_t utf8::getcodelen(cT c_)
@@ -1343,25 +1362,30 @@ namespace utfcvt
         return getcodelen(c);
     }
 
-#else  /* utfcvt_compiler_clz */
+#else  /* utfcvt_compiler_{bsr|clz} */
 
     template <typename cT>
     inline size_t utf8::getcodelen(cT c_)
     {
-        typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
-
-        char_t c = char_t(c_);
-
-        return sizeof(cT) <= 4 ? getcodelen32(c) : getcodelen64(c);
+        return sizeof(cT) <= 4 ? getcodelen32(c_) : getcodelen64(c_);
     }
 
     template <typename cT>
     inline size_t utf8::getcodelen32(cT c_)
     {
-        utf32_t c = utf32_t(c_);
+        typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
+
+        char_t c = char_t(c_);
+        int bpos;
 
         if (c < 0x80) return 1;
-        return (06543201 >> ((utfcvtimpl::clz32(c ^ 0xff) - 24) * 3)) & 7;
+        if (c > 0xff) return 0;
+#if utfcvt_compiler_bsr
+        bpos = (31 - 24) - utfcvtimpl::bsr32(c ^ 0xff);
+#else  /* !utfcvt_compiler_bsr */
+        bpos = utfcvtimpl::clz32(c ^ 0xff) - 24;
+#endif
+        return (06543201 >> (bpos * 3)) & 7;
     }
 
     template <typename cT>
@@ -1372,7 +1396,7 @@ namespace utfcvt
         return ((c >> 32) == 0) ? getcodelen32(utf32_t(c)) : 0;
     }
 
-#endif /* utfcvt_compiler_clz */
+#endif /* utfcvt_compiler_{bsr|clz} */
 
     /* getcode */
 
@@ -2549,7 +2573,7 @@ namespace utfcvt
         template <typename T>
         inline int clz32(T t)
         {
-            std::uint32_t x(t);
+            std::uint32_t x = uint32_t(t);
 #if utfcvt_compiler_cxx20
             return std::countl_zero(x);
 #elif utfcvt_compiler_builtin_ia32_lzcnt_u32
@@ -2559,10 +2583,25 @@ namespace utfcvt
             int r = __builtin_clz(x);
             return x ? r : 32;
 #elif utfcvt_compiler_bsr
-            unsigned long r;
-            return _BitScanReverse(&r, x) ? 31 - r : 32;
-#else /* !utfcvt_compiler_clz */
+            return 31 - bsr32(t);
+#else /* STD */
             return clzN(x);
+#endif
+        }
+
+        template <typename T>
+        inline int bsr32(T t)
+        {
+            std::uint32_t x = uint32_t(t);
+#if utfcvt_compiler_bsr_gnu_asm
+            std::int32_t r = -1;
+            __asm__ ("bsr\t%1,%0": "+r" (r): "r" (x));
+            return int(r);
+#elif utfcvt_compiler_bsr_msvc
+            unsigned long r;
+            return _BitScanReverse(&r, x) ? int(r) : -1;
+#else /* !utfcvt_compiler_bsr */
+            return 31 - clz32(x);
 #endif
         }
 
