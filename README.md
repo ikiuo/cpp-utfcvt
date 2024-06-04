@@ -237,3 +237,5 @@ template <typename dT, typename sT> static utfcvt_result cvtlen(dT& d, sT* s, si
 template <typename dT, typename sT> static utfcvt_result cvtlen(dT& d, sT& s);
 template <typename dT, typename sT> static utfcvt_result cvtlen(dT& d, sT* s);
 ```
+
+引数 d は出力先の形式を指定するために使用します。
