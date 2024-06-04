@@ -2050,7 +2050,7 @@ namespace utfcvt
 
         comp_t c = char_t(c_);
 
-        return c <= 0xffffffffU ? 1 : 0;
+        return c <= UINT32_C(0xffffffff) ? 1 : 0;
     }
 
     /* getcode */
