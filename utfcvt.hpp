@@ -2602,8 +2602,8 @@ namespace utfcvt
 #if utfcvt_compiler_builtin_clz
             return !std::uint32_t(x) ? -1 : 31 - __builtin_clz(x);
 #elif utfcvt_compiler_bsr_msvc
-            unsigned long r = (unsigned long)(-1);
-            return (_BitScanReverse(&r, std::uint32_t(x)), int(r));
+            unsigned long r;
+            return _BitScanReverse(&r, std::uint32_t(x)) ? int(r) : -1;
 #elif utfcvt_compiler_clz
             return 31 - clz32(std::uint32_t(x));
 #else
