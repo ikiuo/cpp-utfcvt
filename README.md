@@ -119,6 +119,7 @@ template <typename dT, typename sT> static utfcvt_result to_utf32(dT& d, sT& s);
 template <typename dT, typename sT> static utfcvt_result to_utf32(dT& d, sT* s);
 ```
 
+
 ## メソッド to_utf8len / to_utf16len / to_utf32len
 
 to_utf8 / to_utf16 / to_utf32 に必要な配列長を取得したいときに使用します。
@@ -143,6 +144,7 @@ template <typename sT> static utfcvt_result to_utf32len(sT* s, size_t n);
 template <typename sT> static utfcvt_result to_utf32len(sT& s);
 template <typename sT> static utfcvt_result to_utf32len(sT* s);
 ```
+
 
 ## メソッド getcodelen
 
@@ -173,6 +175,21 @@ template <typename sT> static utfcvt_getcres getcode(sT* s, size_t n);
 template <typename sT> static utfcvt_getcres getcode(sT& s);
 template <typename sT> static utfcvt_getcres getcode(sT* s);
 ```
+
+
+## メソッド nextcode
+
+指定されたデータ列の先頭から 1 コード分を取得し、引数の位置やサイズなどを変更して返します。
+
+<code>utfcvt_getcres</code> にはデータ量やエラーが含まれています。
+
+```
+template <typename iT> static utfcvt_getcres nextcode(iT& s, iT e);
+template <typename sT> static utfcvt_getcres nextcode(sT*& s, size_t& n);
+template <typename sT> static utfcvt_getcres nextcode(sT*& s);
+```
+
+
 ## メソッド putcodelen
 
 1 コード分のデータ量を返します。範囲は getcodelen と同じです。
@@ -180,6 +197,7 @@ template <typename sT> static utfcvt_getcres getcode(sT* s);
 ```
 template <typename cT> static size_t putcodelen(cT c);
 ```
+
 
 ## メソッド putcode
 
@@ -192,6 +210,7 @@ template <typename cT> static size_t putcodelen(cT c);
 template <typename dT, typename cT> static size_t putcode(dT& d, cT c);
 ```
 
+
 ## メソッド replacement_character
 
 エラーなどで置換する文字を返します。
@@ -201,6 +220,7 @@ static std::uint8_t utf8::replacement_character();   // U+003F = '?'
 static std::uint16_t utf16::replacement_character(); // U+FFFD
 static std::uint32_t utf32::replacement_character(); // U+FFFD
 ```
+
 
 # クラス utf の静的メソッド
 
@@ -239,3 +259,31 @@ template <typename dT, typename sT> static utfcvt_result cvtlen(dT& d, sT* s);
 ```
 
 引数 d は出力先の形式を指定するために使用します。
+
+
+## メソッド getcode / nextcode
+
+変換元の引数を <code>const void *</code> とします。メモリ内容とテンプレート引数の型は一致してなければなりません。
+
+```
+template <typename cT> utfcvt_getcres getcode(const void* s, const void* e);
+template <typename cT> utfcvt_getcres nextcode(const void*& s, const void* e);
+```
+
+以下の関数ポインタ型に
+
+```
+typedef utfcvt_getcres (*utfcvt_getcode)(const void* s, const void* e);
+typedef utfcvt_getcres (*utfcvt_nextcode)(const void*& s, const void* e);
+```
+
+- getcode
+  - UTF-8 : <code>utf::getcode&lt;char8_t&gt;</code>
+  - UTF-16 : <code>utf::getcode&lt;cahr16_t&gt;</code>
+  - UTF-32 : <code>utf::getcode&lt;char32_t&gt;</code>
+- nextcode
+  - UTF-8 : <code>utf::nextcode&lt;char8_t&gt;</code>
+  - UTF-16 : <code>utf::nextcode&lt;cahr16_t&gt;</code>
+  - UTF-32 : <code>utf::nextcode&lt;char32_t&gt;</code>
+
+などを代入できます。
