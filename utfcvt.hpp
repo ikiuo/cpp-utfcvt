@@ -3,30 +3,47 @@
  */
 #pragma once
 
-#include <algorithm>
-#include <cstdint>
-#include <cwchar>
-#include <limits>
-#include <string>
+/*
+ * __has_builtin
+ */
 
-#ifdef _MSC_VER
-#  include <intrin.h>
+#ifndef __has_builtin
+#define __has_builtin(f)  0
 #endif
 
 /*
  * C++XX
  */
 
-#if __cplusplus >= 201103L
+#if __cplusplus >= 201103L || _MSVC_LANG >= 201103L
 #  define utfcvt_compiler_cxx11  1
 #else  /* C++11 */
 #  define utfcvt_compiler_cxx11  0
 #endif
 
-#if __cplusplus >= 202002L
+#if __cplusplus >= 201402L || _MSVC_LANG >= 201402L
+#  define utfcvt_compiler_cxx14  1
+#else  /* C++11 */
+#  define utfcvt_compiler_cxx14  0
+#endif
+
+#if __cplusplus >= 202002L || _MSVC_LANG >= 202002L
 #  define utfcvt_compiler_cxx20  1
 #else  /* C++20 */
 #  define utfcvt_compiler_cxx20  0
+#endif
+
+/*
+ * noexcept
+ */
+
+#if !utfcvt_compiler_cxx11
+#  ifndef constexpr
+#    define constexpr
+#  endif
+#  ifndef noexcept
+#    define noexcept
+#  endif
 #endif
 
 /*
@@ -94,17 +111,21 @@
  * bsr
  */
 #ifndef utfcvt_compiler_bsr
-#  if defined(__GNUC__) && (defined(__x86__) || defined(__x86_64))
-#    define utfcvt_compiler_bsr_gnu_asm  1
-#  endif
-#  ifdef _MSC_VER
-#    define utfcvt_compiler_bsr_msvc  1
-#  endif /* VC++ */
-#  if (0 ||                                     \
-       defined(utfcvt_compiler_bsr_gnu_asm) ||  \
-       defined(utfcvt_compiler_bsr_msvc) ||     \
-       0)
+#  if 0 /* utfcvt_compiler_cxx20 */
 #    define utfcvt_compiler_bsr  1
+#  else
+#    if defined(__GNUC__) && (defined(__x86__) || defined(__x86_64))
+#      define utfcvt_compiler_bsr_x86  1
+#    endif
+#    ifdef _MSC_VER
+#      define utfcvt_compiler_bsr_msvc  1
+#    endif /* VC++ */
+#    if (0 ||                                     \
+         defined(utfcvt_compiler_bsr_x86) ||      \
+         defined(utfcvt_compiler_bsr_msvc) ||     \
+         0)
+#      define utfcvt_compiler_bsr  1
+#    endif
 #  endif
 #endif
 #ifndef utfcvt_compiler_bsr
@@ -116,21 +137,14 @@
  */
 #ifndef utfcvt_compiler_clz
 #  if utfcvt_compiler_cxx20
-#    include <bit>
 #    define utfcvt_compiler_clz  1
 #  else
-#    if defined(__has_builtin)
-#      if __has_builtin(__builtin_clz)
-#        define utfcvt_compiler_builtin_clz  1
-#      endif
-#      if __has_builtin(__builtin_ia32_lzcnt_u32)
-#        define utfcvt_compiler_builtin_ia32_lzcnt_u32  1
-#      endif
-#    endif /* __has_builtin */
-#    if (0 ||                                                 \
-         defined(utfcvt_compiler_builtin_clz) ||              \
-         defined(utfcvt_compiler_builtin_ia32_lzcnt_u32) ||   \
-         defined(utfcvt_compiler_bsr) ||                      \
+#    if __has_builtin(__builtin_clz)
+#      define utfcvt_compiler_builtin_clz  1
+#    endif
+#    if (0 ||                                       \
+         defined(utfcvt_compiler_builtin_clz) ||    \
+         defined(utfcvt_compiler_bsr) ||            \
          0)
 #      define utfcvt_compiler_clz  1
 #    endif
@@ -144,11 +158,31 @@
  * utf8::putcodelen
  */
 #ifndef utfcvt_utf8_putcodelen_mode
-#  if !utfcvt_compiler_clz
+#  if !(!utfcvt_compiler_bsr || utfcvt_compiler_clz)
 #    define utfcvt_utf8_putcodelen_mode  0
+#  elif !utfcvt_compiler_cxx11 /* || utfcvt_compiler_cxx2b */
+#    define utfcvt_utf8_putcodelen_mode  2
 #  else
 #    define utfcvt_utf8_putcodelen_mode  1
 #  endif
+#endif
+
+/*
+ *
+ */
+
+#include <algorithm>
+#include <cstdint>
+#include <cwchar>
+#include <limits>
+#include <string>
+
+#ifdef _MSC_VER
+#  include <intrin.h>
+#endif
+
+#if utfcvt_compiler_cxx20
+#include <bit>
 #endif
 
 /*
@@ -162,11 +196,11 @@ namespace utfcvt
      *
      */
 
-    std::uint8_t replace_u8c();
-    std::uint16_t replace_u16c();
-    std::uint32_t replace_u32c();
+    constexpr std::uint8_t replace_u8c() noexcept;
+    constexpr std::uint16_t replace_u16c() noexcept;
+    constexpr std::uint32_t replace_u32c() noexcept;
 
-    template <typename sT> size_t utflen(sT* s);
+    template <typename sT> size_t utflen(sT* s) noexcept;
 
 #if utfcvt_compiler_string
     template <typename sT> std::string to_string(sT s);
@@ -208,7 +242,7 @@ namespace utfcvt
         std::uint8_t size;
         utf32_t code;
 
-        utfcvt_getcres(size_t s, utf32_t c, bool b = true);
+        utfcvt_getcres(size_t s, utf32_t c, bool b = true) noexcept;
     };
 
     struct utfcvt_result
@@ -217,7 +251,7 @@ namespace utfcvt
         size_t read;
         size_t write;
 
-        utfcvt_result(size_t r, size_t w, bool b = true);
+        utfcvt_result(size_t r, size_t w, bool b = true) noexcept;
     };
 
     template <typename T>
@@ -232,20 +266,20 @@ namespace utfcvt
         bool error;
 
     public:
-        utfcvt_buffer(T* p, T* e);
-        utfcvt_buffer(T* p, size_t n);
+        utfcvt_buffer(T* p, T* e) noexcept;
+        utfcvt_buffer(T* p, size_t n) noexcept;
 
-        void push_back(T c);
+        void push_back(T c) noexcept;
     };
 
     class utf_common
     {
     public:
         template <typename sT>
-        static size_t len(sT* s);
+        static size_t len(sT* s) noexcept;
 
         template <typename sT>
-        static size_t length(sT* s);
+        static size_t length(sT* s) noexcept;
 
     protected:
         template <typename dU, typename sU, typename dT, typename iT>
@@ -261,10 +295,10 @@ namespace utfcvt
         static utfcvt_result convert(dT& d, iT s, iT e);
 
         template <typename dU, typename sU, typename iT>
-        static utfcvt_result count(iT s, iT e);
+        static utfcvt_result count(iT s, iT e) noexcept;
 
         template <typename dU, typename sU, typename iT>
-        static utfcvt_result cvtlen(iT s, iT e);
+        static utfcvt_result cvtlen(iT s, iT e) noexcept;
     };
 
     class utf8 : public utf_common
@@ -274,31 +308,31 @@ namespace utfcvt
 
         /* replacement_character */
 
-        static std::uint8_t replacement_character();
+        static constexpr std::uint8_t replacement_character() noexcept;
 
         /* getcodelen */
 
         template <typename cT>
-        static size_t getcodelen(cT c);
+        static constexpr size_t getcodelen(cT c) noexcept;
 
         /* getcode */
 
         template <typename iT>
-        static utfcvt_getcres getcode(iT s, iT e);
+        static utfcvt_getcres getcode(iT s, iT e) noexcept;
 
         template <typename sT>
-        static utfcvt_getcres getcode(sT* s, size_t n);
+        static utfcvt_getcres getcode(sT* s, size_t n) noexcept;
 
         template <typename sT>
-        static utfcvt_getcres getcode(sT& s);
+        static utfcvt_getcres getcode(sT& s) noexcept;
 
         template <typename sT>
-        static utfcvt_getcres getcode(sT* s);
+        static utfcvt_getcres getcode(sT* s) noexcept;
 
         /* putcodelen */
 
         template <typename cT>
-        static size_t putcodelen(cT c);
+        static constexpr size_t putcodelen(cT c) noexcept;
 
         /* putcode */
 
@@ -308,44 +342,44 @@ namespace utfcvt
         /* to_utf8len */
 
         template <typename iT>
-        static utfcvt_result to_utf8len(iT s, iT e);
+        static utfcvt_result to_utf8len(iT s, iT e) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf8len(sT* s, size_t n);
+        static utfcvt_result to_utf8len(sT* s, size_t n) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf8len(sT& s);
+        static utfcvt_result to_utf8len(sT& s) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf8len(sT* s);
+        static utfcvt_result to_utf8len(sT* s) noexcept;
 
         /* to_utf16len */
 
         template <typename iT>
-        static utfcvt_result to_utf16len(iT s, iT e);
+        static utfcvt_result to_utf16len(iT s, iT e) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf16len(sT* s, size_t n);
+        static utfcvt_result to_utf16len(sT* s, size_t n) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf16len(sT& s);
+        static utfcvt_result to_utf16len(sT& s) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf16len(sT* s);
+        static utfcvt_result to_utf16len(sT* s) noexcept;
 
         /* to_utf32len */
 
         template <typename iT>
-        static utfcvt_result to_utf32len(iT s, iT e);
+        static utfcvt_result to_utf32len(iT s, iT e) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf32len(sT* s, size_t n);
+        static utfcvt_result to_utf32len(sT* s, size_t n) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf32len(sT& s);
+        static utfcvt_result to_utf32len(sT& s) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf32len(sT* s);
+        static utfcvt_result to_utf32len(sT* s) noexcept;
 
         /* to_utf8 */
 
@@ -390,10 +424,10 @@ namespace utfcvt
         static utfcvt_result to_utf32(dT& d, sT* s);
 
     protected:
-        template <typename cT> static size_t getcodelen32(cT c);
-        template <typename cT> static size_t getcodelen64(cT c);
-        template <typename cT> static size_t putcodelen32(cT c);
-        template <typename cT> static size_t putcodelen64(cT c);
+        template <typename cT> static constexpr size_t getcodelen32(cT c) noexcept;
+        template <typename cT> static constexpr size_t getcodelen64(cT c) noexcept;
+        template <typename cT> static constexpr size_t putcodelen32(cT c) noexcept;
+        template <typename cT> static constexpr size_t putcodelen64(cT c) noexcept;
     };
 
     class utf16 : public utf_common
@@ -403,31 +437,31 @@ namespace utfcvt
 
         /* replacement_character */
 
-        static std::uint16_t replacement_character();
+        static constexpr std::uint16_t replacement_character() noexcept;
 
         /* getcodelen */
 
         template <typename cT>
-        static size_t getcodelen(cT c);
+        static constexpr size_t getcodelen(cT c) noexcept;
 
         /* getcode */
 
         template <typename iT>
-        static utfcvt_getcres getcode(iT s, iT e);
+        static utfcvt_getcres getcode(iT s, iT e) noexcept;
 
         template <typename sT>
-        static utfcvt_getcres getcode(sT* s, size_t n);
+        static utfcvt_getcres getcode(sT* s, size_t n) noexcept;
 
         template <typename sT>
-        static utfcvt_getcres getcode(sT& s);
+        static utfcvt_getcres getcode(sT& s) noexcept;
 
         template <typename sT>
-        static utfcvt_getcres getcode(sT* s);
+        static utfcvt_getcres getcode(sT* s) noexcept;
 
         /* putcodelen */
 
         template <typename cT>
-        static size_t putcodelen(cT c);
+        static constexpr size_t putcodelen(cT c) noexcept;
 
         /* putcode */
 
@@ -437,44 +471,44 @@ namespace utfcvt
         /* to_utf8len */
 
         template <typename iT>
-        static utfcvt_result to_utf8len(iT s, iT e);
+        static utfcvt_result to_utf8len(iT s, iT e) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf8len(sT* s, size_t n);
+        static utfcvt_result to_utf8len(sT* s, size_t n) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf8len(sT& s);
+        static utfcvt_result to_utf8len(sT& s) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf8len(sT* s);
+        static utfcvt_result to_utf8len(sT* s) noexcept;
 
         /* to_utf16len */
 
         template <typename iT>
-        static utfcvt_result to_utf16len(iT s, iT e);
+        static utfcvt_result to_utf16len(iT s, iT e) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf16len(sT* s, size_t n);
+        static utfcvt_result to_utf16len(sT* s, size_t n) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf16len(sT& s);
+        static utfcvt_result to_utf16len(sT& s) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf16len(sT* s);
+        static utfcvt_result to_utf16len(sT* s) noexcept;
 
         /* to_utf32len */
 
         template <typename iT>
-        static utfcvt_result to_utf32len(iT s, iT e);
+        static utfcvt_result to_utf32len(iT s, iT e) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf32len(sT* s, size_t n);
+        static utfcvt_result to_utf32len(sT* s, size_t n) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf32len(sT& s);
+        static utfcvt_result to_utf32len(sT& s) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf32len(sT* s);
+        static utfcvt_result to_utf32len(sT* s) noexcept;
 
         /* to_utf8 */
 
@@ -519,10 +553,10 @@ namespace utfcvt
         static utfcvt_result to_utf32(dT& d, sT* s);
 
     protected:
-        template <typename cT> static size_t getcodelen32(cT c);
-        template <typename cT> static size_t getcodelen64(cT c);
-        template <typename cT> static size_t putcodelen32(cT c);
-        template <typename cT> static size_t putcodelen64(cT c);
+        template <typename cT> static constexpr size_t getcodelen32(cT c) noexcept;
+        template <typename cT> static constexpr size_t getcodelen64(cT c) noexcept;
+        template <typename cT> static constexpr size_t putcodelen32(cT c) noexcept;
+        template <typename cT> static constexpr size_t putcodelen64(cT c) noexcept;
     };
 
     class utf32 : public utf_common
@@ -532,31 +566,31 @@ namespace utfcvt
 
         /* replacement_character */
 
-        static std::uint32_t replacement_character();
+        static constexpr std::uint32_t replacement_character() noexcept;
 
         /* getcodelen */
 
         template <typename cT>
-        static size_t getcodelen(cT c);
+        static constexpr size_t getcodelen(cT c) noexcept;
 
         /* getcode */
 
         template <typename iT>
-        static utfcvt_getcres getcode(iT s, iT e);
+        static utfcvt_getcres getcode(iT s, iT e) noexcept;
 
         template <typename sT>
-        static utfcvt_getcres getcode(sT* s, size_t n);
+        static utfcvt_getcres getcode(sT* s, size_t n) noexcept;
 
         template <typename sT>
-        static utfcvt_getcres getcode(sT& s);
+        static utfcvt_getcres getcode(sT& s) noexcept;
 
         template <typename sT>
-        static utfcvt_getcres getcode(sT* s);
+        static utfcvt_getcres getcode(sT* s) noexcept;
 
         /* putcodelen */
 
         template <typename cT>
-        static size_t putcodelen(cT c);
+        static constexpr size_t putcodelen(cT c) noexcept;
 
         /* putcode */
 
@@ -566,44 +600,44 @@ namespace utfcvt
         /* to_utf8len */
 
         template <typename iT>
-        static utfcvt_result to_utf8len(iT s, iT e);
+        static utfcvt_result to_utf8len(iT s, iT e) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf8len(sT* s, size_t n);
+        static utfcvt_result to_utf8len(sT* s, size_t n) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf8len(sT& s);
+        static utfcvt_result to_utf8len(sT& s) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf8len(sT* s);
+        static utfcvt_result to_utf8len(sT* s) noexcept;
 
         /* to_utf16len */
 
         template <typename iT>
-        static utfcvt_result to_utf16len(iT s, iT e);
+        static utfcvt_result to_utf16len(iT s, iT e) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf16len(sT* s, size_t n);
+        static utfcvt_result to_utf16len(sT* s, size_t n) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf16len(sT& s);
+        static utfcvt_result to_utf16len(sT& s) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf16len(sT* s);
+        static utfcvt_result to_utf16len(sT* s) noexcept;
 
         /* to_utf32len */
 
         template <typename iT>
-        static utfcvt_result to_utf32len(iT s, iT e);
+        static utfcvt_result to_utf32len(iT s, iT e) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf32len(sT* s, size_t n);
+        static utfcvt_result to_utf32len(sT* s, size_t n) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf32len(sT& s);
+        static utfcvt_result to_utf32len(sT& s) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf32len(sT* s);
+        static utfcvt_result to_utf32len(sT* s) noexcept;
 
         /* to_utf8 */
 
@@ -648,10 +682,10 @@ namespace utfcvt
         static utfcvt_result to_utf32(dT& d, sT* s);
 
     protected:
-        template <typename cT> static size_t getcodelen32(cT c);
-        template <typename cT> static size_t getcodelen64(cT c);
-        template <typename cT> static size_t putcodelen32(cT c);
-        template <typename cT> static size_t putcodelen64(cT c);
+        template <typename cT> static constexpr size_t getcodelen32(cT c) noexcept;
+        template <typename cT> static constexpr size_t getcodelen64(cT c) noexcept;
+        template <typename cT> static constexpr size_t putcodelen32(cT c) noexcept;
+        template <typename cT> static constexpr size_t putcodelen64(cT c) noexcept;
     };
 
     class utf : public utf_common
@@ -660,26 +694,26 @@ namespace utfcvt
         /* getcodelen */
 
         template <typename cT>
-        static size_t getcodelen(cT c);
+        static constexpr size_t getcodelen(cT c) noexcept;
 
         /* getcode */
 
         template <typename iT>
-        static utfcvt_getcres getcode(iT s, iT e);
+        static utfcvt_getcres getcode(iT s, iT e) noexcept;
 
         template <typename sT>
-        static utfcvt_getcres getcode(sT* s, size_t n);
+        static utfcvt_getcres getcode(sT* s, size_t n) noexcept;
 
         template <typename sT>
-        static utfcvt_getcres getcode(sT& s);
+        static utfcvt_getcres getcode(sT& s) noexcept;
 
         template <typename sT>
-        static utfcvt_getcres getcode(sT* s);
+        static utfcvt_getcres getcode(sT* s) noexcept;
 
         /* putcodelen */
 
         template <typename cT>
-        inline static size_t putcodelen(cT c);
+        inline static constexpr size_t putcodelen(cT c) noexcept;
 
         /* putcode */
 
@@ -689,44 +723,44 @@ namespace utfcvt
         /* to_utf8len */
 
         template <typename iT>
-        static utfcvt_result to_utf8len(iT s, iT e);
+        static utfcvt_result to_utf8len(iT s, iT e) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf8len(sT* s, size_t n);
+        static utfcvt_result to_utf8len(sT* s, size_t n) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf8len(sT& s);
+        static utfcvt_result to_utf8len(sT& s) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf8len(sT* s);
+        static utfcvt_result to_utf8len(sT* s) noexcept;
 
         /* to_utf16len */
 
         template <typename iT>
-        static utfcvt_result to_utf16len(iT s, iT e);
+        static utfcvt_result to_utf16len(iT s, iT e) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf16len(sT* s, size_t n);
+        static utfcvt_result to_utf16len(sT* s, size_t n) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf16len(sT& s);
+        static utfcvt_result to_utf16len(sT& s) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf16len(sT* s);
+        static utfcvt_result to_utf16len(sT* s) noexcept;
 
         /* to_utf32len */
 
         template <typename iT>
-        static utfcvt_result to_utf32len(iT s, iT e);
+        static utfcvt_result to_utf32len(iT s, iT e) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf32len(sT* s, size_t n);
+        static utfcvt_result to_utf32len(sT* s, size_t n) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf32len(sT& s);
+        static utfcvt_result to_utf32len(sT& s) noexcept;
 
         template <typename sT>
-        static utfcvt_result to_utf32len(sT* s);
+        static utfcvt_result to_utf32len(sT* s) noexcept;
 
         /* to_utf8 */
 
@@ -773,16 +807,16 @@ namespace utfcvt
         /* cvtlen */
 
         template <typename dT, typename iT>
-        static utfcvt_result cvtlen(dT& d, iT s, iT e);
+        static utfcvt_result cvtlen(dT& d, iT s, iT e) noexcept;
 
         template <typename dT, typename sT>
-        static utfcvt_result cvtlen(dT& d, sT* s, size_t n);
+        static utfcvt_result cvtlen(dT& d, sT* s, size_t n) noexcept;
 
         template <typename dT, typename sT>
-        static utfcvt_result cvtlen(dT& d, sT& s);
+        static utfcvt_result cvtlen(dT& d, sT& s) noexcept;
 
         template <typename dT, typename sT>
-        static utfcvt_result cvtlen(dT& d, sT* s);
+        static utfcvt_result cvtlen(dT& d, sT* s) noexcept;
 
         /* cvt */
 
@@ -805,9 +839,10 @@ namespace utfcvt
 
     namespace utfcvtimpl
     {
-        template <typename T> int clzN(T x);
-        template <typename T> int clz32(T t);
-        template <typename T> int bsr32(T t);
+        template <typename T> constexpr int bsr32(T t) noexcept;
+
+        template <typename T> constexpr int clzN(T x) noexcept;
+        template <typename T> constexpr int clz32(T t) noexcept;
 
         template <typename T>
         struct binary_type
@@ -919,7 +954,7 @@ namespace utfcvt
         struct cvt_utf8
         {
             template <typename iT>
-            static utfcvt_result cvtlen(iT s, iT e);
+            static utfcvt_result cvtlen(iT s, iT e) noexcept;
 
             template <typename iT>
             static utfcvt_result cvt(dT& d, iT s, iT e);
@@ -929,7 +964,7 @@ namespace utfcvt
         struct cvt_utf16
         {
             template <typename iT>
-            static utfcvt_result cvtlen(iT s, iT e);
+            static utfcvt_result cvtlen(iT s, iT e) noexcept;
 
             template <typename iT>
             static utfcvt_result cvt(dT& d, iT s, iT e);
@@ -939,7 +974,7 @@ namespace utfcvt
         struct cvt_utf32
         {
             template <typename iT>
-            static utfcvt_result cvtlen(iT s, iT e);
+            static utfcvt_result cvtlen(iT s, iT e) noexcept;
 
             template <typename iT>
             static utfcvt_result cvt(dT& d, iT s, iT e);
@@ -971,23 +1006,23 @@ namespace utfcvt
      *
      */
 
-    inline std::uint8_t replace_u8c()
+    inline constexpr std::uint8_t replace_u8c() noexcept
     {
         return 0x3f;  // '?'
     }
 
-    inline std::uint16_t replace_u16c()
+    inline constexpr std::uint16_t replace_u16c() noexcept
     {
         return 0xfffd;
     }
 
-    inline std::uint32_t replace_u32c()
+    inline constexpr std::uint32_t replace_u32c() noexcept
     {
         return replace_u16c();
     }
 
     template <typename sT>
-    inline size_t utflen(sT* s)
+    inline size_t utflen(sT* s) noexcept
     {
         return utf::length(s);
     }
@@ -1147,7 +1182,7 @@ namespace utfcvt
      * utfcvt_getcres
      */
 
-    inline utfcvt_getcres::utfcvt_getcres(size_t s, utf32_t c, bool b)
+    inline utfcvt_getcres::utfcvt_getcres(size_t s, utf32_t c, bool b) noexcept
         : success(b)
         , size(std::uint8_t(s))
         , code(c)
@@ -1159,7 +1194,7 @@ namespace utfcvt
      * utfcvt_result
      */
 
-    inline utfcvt_result::utfcvt_result(size_t r, size_t w, bool b)
+    inline utfcvt_result::utfcvt_result(size_t r, size_t w, bool b) noexcept
         : success(b)
         , read(r)
         , write(w)
@@ -1172,7 +1207,7 @@ namespace utfcvt
      */
 
     template <typename T>
-    inline utfcvt_buffer<T>::utfcvt_buffer(T* p, T* e)
+    inline utfcvt_buffer<T>::utfcvt_buffer(T* p, T* e) noexcept
         : start(p)
         , end(e)
         , pointer(p)
@@ -1182,7 +1217,7 @@ namespace utfcvt
     }
 
     template <typename T>
-    inline utfcvt_buffer<T>::utfcvt_buffer(T* p, size_t n)
+    inline utfcvt_buffer<T>::utfcvt_buffer(T* p, size_t n) noexcept
         : start(p)
         , end(p + n)
         , pointer(p)
@@ -1192,7 +1227,7 @@ namespace utfcvt
     }
 
     template <typename T>
-    inline void utfcvt_buffer<T>::push_back(T c)
+    inline void utfcvt_buffer<T>::push_back(T c) noexcept
     {
         error = (pointer >= end);
         if (!error)
@@ -1204,13 +1239,13 @@ namespace utfcvt
      */
 
     template <typename sT>
-    inline size_t utf_common::len(sT* s)
+    inline size_t utf_common::len(sT* s) noexcept
     {
         return length(s);
     }
 
     template <typename sT>
-    inline size_t utf_common::length(sT* s)
+    inline size_t utf_common::length(sT* s) noexcept
     {
         sT* p = s;
 
@@ -1291,7 +1326,7 @@ namespace utfcvt
     }
 
     template <typename dU, typename sU, typename iT>
-    inline utfcvt_result utf_common::count(iT s, iT e)
+    inline utfcvt_result utf_common::count(iT s, iT e) noexcept
     {
         if (int(dU::code_size) == int(sU::code_size))
             return utfcvt_result(e - s, e - s);
@@ -1299,7 +1334,7 @@ namespace utfcvt
     }
 
     template <typename dU, typename sU, typename iT>
-    utfcvt_result utf_common::cvtlen(iT s, iT e)
+    utfcvt_result utf_common::cvtlen(iT s, iT e) noexcept
     {
         size_t r = 0, w = 0;
         bool b = true;
@@ -1324,7 +1359,7 @@ namespace utfcvt
 
     /* replacement_character */
 
-    inline std::uint8_t utf8::replacement_character()
+    inline constexpr std::uint8_t utf8::replacement_character() noexcept
     {
         return replace_u8c();
     }
@@ -1334,66 +1369,60 @@ namespace utfcvt
 #if !(utfcvt_compiler_bsr || utfcvt_compiler_clz)
 
     template <typename cT>
-    size_t utf8::getcodelen(cT c_)
+    constexpr size_t utf8::getcodelen(cT c) noexcept
     {
         typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
 
-        char_t c = char_t(c_);
-
-        if (c < 0x80) return 1;
-        if (c < 0xc0) return 0;  // error
-        if (c < 0xe0) return 2;
-        if (c < 0xf0) return 3;
-        if (c < 0xf8) return 4;
-        if (c < 0xfc) return 5;
-        if (c < 0xfe) return 6;
-        return 0;  // error
+        return ((char_t(c) < 0x80) ? 1 :
+                (char_t(c) < 0xc0) ? 0 /* error */ :
+                (char_t(c) < 0xe0) ? 2 :
+                (char_t(c) < 0xf0) ? 3 :
+                (char_t(c) < 0xf8) ? 4 :
+                (char_t(c) < 0xfc) ? 5 :
+                (char_t(c) < 0xfe) ? 6 :
+                0 /* error */);
     }
 
     template <typename cT>
-    inline size_t utf8::getcodelen32(cT c)
+    inline constexpr size_t utf8::getcodelen32(cT c) noexcept
     {
         return getcodelen(c);
     }
 
     template <typename cT>
-    inline size_t utf8::getcodelen64(cT c)
+    inline constexpr size_t utf8::getcodelen64(cT c) noexcept
     {
         return getcodelen(c);
     }
 
-#else  /* utfcvt_compiler_{bsr|clz} */
+#else  /* utfcvt_compiler_(bsr||clz) */
 
     template <typename cT>
-    inline size_t utf8::getcodelen(cT c_)
+    inline constexpr size_t utf8::getcodelen(cT c) noexcept
     {
-        return sizeof(cT) <= 4 ? getcodelen32(c_) : getcodelen64(c_);
+        return sizeof(cT) <= 4 ? getcodelen32(c) : getcodelen64(c);
     }
 
     template <typename cT>
-    inline size_t utf8::getcodelen32(cT c_)
+    inline constexpr size_t utf8::getcodelen32(cT c) noexcept
     {
         typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
 
-        char_t c = char_t(c_);
-        int bpos;
-
-        if (c < 0x80) return 1;
-        if (c > 0xff) return 0;
 #if utfcvt_compiler_bsr
-        bpos = (31 - 24) - utfcvtimpl::bsr32(c ^ 0xff);
-#else  /* !utfcvt_compiler_bsr */
-        bpos = utfcvtimpl::clz32(c ^ 0xff) - 24;
+        return ((char_t(c) < 0x80) ? 1 :
+                (char_t(c) > 0xff) ? 0 /* error */ :
+                (06543201 >> ((7 - utfcvtimpl::bsr32(char_t(c) ^ 0xff)) * 3) & 7));
+#elif utfcvt_compiler_clz
+        return ((char_t(c) < 0x80) ? 1 :
+                (char_t(c) > 0xff) ? 0 /* error */ :
+                (06543201 >> ((utfcvtimpl::clz32(char_t(c) ^ 0xff) - 24) * 3) & 7));
 #endif
-        return (06543201 >> (bpos * 3)) & 7;
     }
 
     template <typename cT>
-    inline size_t utf8::getcodelen64(cT c_)
+    inline constexpr size_t utf8::getcodelen64(cT c) noexcept
     {
-        std::uint64_t c = std::uint64_t(c_);
-
-        return ((c >> 32) == 0) ? getcodelen32(utf32_t(c)) : 0;
+        return !(std::uint64_t(c) >> 32) ? getcodelen32(utf32_t(c)) : 0;
     }
 
 #endif /* utfcvt_compiler_{bsr|clz} */
@@ -1401,7 +1430,7 @@ namespace utfcvt
     /* getcode */
 
     template <typename iT>
-    utfcvt_getcres utf8::getcode(iT s, iT e)
+    utfcvt_getcres utf8::getcode(iT s, iT e) noexcept
     {
         typedef typename utfcvtimpl::template code_type<iT>::char_t char_t;
 
@@ -1431,19 +1460,19 @@ namespace utfcvt
     }
 
     template <typename sT>
-    inline utfcvt_getcres utf8::getcode(sT* s, size_t n)
+    inline utfcvt_getcres utf8::getcode(sT* s, size_t n) noexcept
     {
         return getcode(s, s + n);
     }
 
     template <typename sT>
-    inline utfcvt_getcres utf8::getcode(sT& s)
+    inline utfcvt_getcres utf8::getcode(sT& s) noexcept
     {
         return getcode(s.begin(), s.end());
     }
 
     template <typename sT>
-    inline utfcvt_getcres utf8::getcode(sT* s)
+    inline utfcvt_getcres utf8::getcode(sT* s) noexcept
     {
         return getcode(s, length(s));
     }
@@ -1451,7 +1480,7 @@ namespace utfcvt
     /* putcodelen */
 
     template <typename cT>
-    inline size_t utf8::putcodelen(cT c)
+    inline constexpr size_t utf8::putcodelen(cT c) noexcept
     {
         return sizeof(cT) <= 4 ? putcodelen32(c) : putcodelen64(c);
     }
@@ -1459,26 +1488,48 @@ namespace utfcvt
 #if utfcvt_utf8_putcodelen_mode == 0
 
     template <typename cT>
-    size_t utf8::putcodelen32(cT c_)
+    constexpr size_t utf8::putcodelen32(cT c) noexcept
     {
         typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
         typedef typename utfcvtimpl::template code_type<cT>::comp_t comp_t;
 
-        comp_t c = char_t(c_);
-
-        if (c < (1U << +7)) return 1;
-        if (c < (1U << 11)) return 2;
-        if (c < (1U << 16)) return 3;
-        if (c < (1U << 21)) return 4;
-        if (c < (1U << 26)) return 5;
-        if (c < (1U << 31)) return 6;
-        return 0; // error
+        return ((comp_t(char_t(c)) < (1U << +7)) ? 1 :
+                (comp_t(char_t(c)) < (1U << 11)) ? 2 :
+                (comp_t(char_t(c)) < (1U << 16)) ? 3 :
+                (comp_t(char_t(c)) < (1U << 21)) ? 4 :
+                (comp_t(char_t(c)) < (1U << 26)) ? 5 :
+                (comp_t(char_t(c)) < (1U << 31)) ? 6 :
+                0 /* error */);
     }
 
 #elif utfcvt_utf8_putcodelen_mode == 1
 
     template <typename cT>
-    inline size_t utf8::putcodelen32(cT c)
+    inline size_t constexpr utf8::putcodelen32(cT c) noexcept
+    {
+        typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
+
+        // int n = utfcvtimpl::clz32(char_t(c));
+        // if (!n--) return 0;  // error
+        // // 11111111 2222 3333 3 444 44 55 555 6 6666
+        // // 11111111 0000 1111/1 000/00 11/111 0/0000 = FF0F83E0
+        // // 00000000 1111 1111/1 000/00 00/000 1/1111 = 00FF801F
+        // // 00000000 0000 0000/0 111/11 11/111 1/1111 = 00007FFF
+        // std::uint_least32_t b0 = 1 & (0xFF0F83E0 >> n);
+        // std::uint_least32_t b1 = 1 & (0x00FF801F >> n);
+        // std::uint_least32_t b2 = 1 & (0x00007FFF >> n);
+        // return size_t((b0 << 0) | (b1 << 1) | (b2 << 2));
+
+        return !utfcvtimpl::clz32(char_t(c)) ? 0 /* error */ :
+            ((1 & (0xFF0F83E0 >> (utfcvtimpl::clz32(char_t(c)) - 1))) << 0) |
+            ((1 & (0x00FF801F >> (utfcvtimpl::clz32(char_t(c)) - 1))) << 1) |
+            ((1 & (0x00007FFF >> (utfcvtimpl::clz32(char_t(c)) - 1))) << 2);
+    }
+
+#elif utfcvt_utf8_putcodelen_mode == 2
+
+    template <typename cT>
+    inline constexpr size_t utf8::putcodelen32(cT c) noexcept
     {
         typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
 
@@ -1496,36 +1547,12 @@ namespace utfcvt
         return table[utfcvtimpl::clz32(char_t(c))];
     }
 
-#elif utfcvt_utf8_putcodelen_mode == 2
-
-    template <typename cT>
-    inline size_t utf8::putcodelen32(cT c)
-    {
-        typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
-
-        int n = clz32(char_t(c));
-
-        if (!n--) return 0;  // error
-
-        // 11111111 2222 3333 3 444 44 55 555 6 6666
-        // 11111111 0000 1111/1 000/00 11/111 0/0000 = FF0F83E0
-        // 00000000 1111 1111/1 000/00 00/000 1/1111 = 00FF801F
-        // 00000000 0000 0000/0 111/11 11/111 1/1111 = 00007FFF
-        std::uint_least32_t b0 = 1 & (0xFF0F83E0 >> n);
-        std::uint_least32_t b1 = 1 & (0x00FF801F >> n);
-        std::uint_least32_t b2 = 1 & (0x00007FFF >> n);
-
-        return size_t((b0 << 0) | (b1 << 1) | (b2 << 2));
-    }
-
 #endif /* utfcvt_utf8_putcodelen_mode */
 
     template <typename cT>
-    inline size_t utf8::putcodelen64(cT c_)
+    inline constexpr size_t utf8::putcodelen64(cT c) noexcept
     {
-        std::uint64_t c = std::uint64_t(c_);
-
-        return (c >> 32) == 0 ? putcodelen32(utf32_t(c)) : 0;
+        return !(std::uint64_t(c) >> 32) ? putcodelen32(utf32_t(c)) : 0;
     }
 
     /* putcode */
@@ -1565,25 +1592,25 @@ namespace utfcvt
     /* to_utf8len */
 
     template <typename iT>
-    inline utfcvt_result utf8::to_utf8len(iT s, iT e)
+    inline utfcvt_result utf8::to_utf8len(iT s, iT e) noexcept
     {
         return count<utf8, utf8, iT>(s, e);
     }
 
     template <typename sT>
-    inline utfcvt_result utf8::to_utf8len(sT* s, size_t n)
+    inline utfcvt_result utf8::to_utf8len(sT* s, size_t n) noexcept
     {
         return to_utf8len(s, s + n);
     }
 
     template <typename sT>
-    inline utfcvt_result utf8::to_utf8len(sT& s)
+    inline utfcvt_result utf8::to_utf8len(sT& s) noexcept
     {
         return to_utf8len(s.begin(), s.end());
     }
 
     template <typename sT>
-    inline utfcvt_result utf8::to_utf8len(sT* s)
+    inline utfcvt_result utf8::to_utf8len(sT* s) noexcept
     {
         return to_utf8len(s, length(s));
     }
@@ -1591,25 +1618,25 @@ namespace utfcvt
     /* to_utf16len */
 
     template <typename iT>
-    inline utfcvt_result utf8::to_utf16len(iT s, iT e)
+    inline utfcvt_result utf8::to_utf16len(iT s, iT e) noexcept
     {
         return count<utf16, utf8, iT>(s, e);
     }
 
     template <typename sT>
-    inline utfcvt_result utf8::to_utf16len(sT* s, size_t n)
+    inline utfcvt_result utf8::to_utf16len(sT* s, size_t n) noexcept
     {
         return to_utf16len(s, s + n);
     }
 
     template <typename sT>
-    inline utfcvt_result utf8::to_utf16len(sT& s)
+    inline utfcvt_result utf8::to_utf16len(sT& s) noexcept
     {
         return to_utf16len(s.begin(), s.end());
     }
 
     template <typename sT>
-    inline utfcvt_result utf8::to_utf16len(sT* s)
+    inline utfcvt_result utf8::to_utf16len(sT* s) noexcept
     {
         return to_utf16len(s, length(s));
     }
@@ -1617,25 +1644,25 @@ namespace utfcvt
     /* to_utf32len */
 
     template <typename iT>
-    inline utfcvt_result utf8::to_utf32len(iT s, iT e)
+    inline utfcvt_result utf8::to_utf32len(iT s, iT e) noexcept
     {
         return count<utf32, utf8, iT>(s, e);
     }
 
     template <typename sT>
-    inline utfcvt_result utf8::to_utf32len(sT* s, size_t n)
+    inline utfcvt_result utf8::to_utf32len(sT* s, size_t n) noexcept
     {
         return to_utf32len(s, s + n);
     }
 
     template <typename sT>
-    inline utfcvt_result utf8::to_utf32len(sT& s)
+    inline utfcvt_result utf8::to_utf32len(sT& s) noexcept
     {
         return to_utf32len(s.begin(), s.end());
     }
 
     template <typename sT>
-    inline utfcvt_result utf8::to_utf32len(sT* s)
+    inline utfcvt_result utf8::to_utf32len(sT* s) noexcept
     {
         return to_utf32len(s, length(s));
     }
@@ -1724,7 +1751,7 @@ namespace utfcvt
 
     /* replacement_character */
 
-    inline std::uint16_t utf16::replacement_character()
+    inline constexpr std::uint16_t utf16::replacement_character() noexcept
     {
         return replace_u16c();
     }
@@ -1732,28 +1759,26 @@ namespace utfcvt
     /* getcodelen */
 
     template <typename cT>
-    size_t utf16::getcodelen(cT c_)
+    inline constexpr size_t utf16::getcodelen(cT c) noexcept
     {
         typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
         typedef typename utfcvtimpl::template code_type<cT>::comp_t comp_t;
 
-        comp_t c = char_t(c_);
-
-        if (c < 0x0d800) return 1;
-        if (c < 0x0dc00) return 2;
-        if (c < 0x0e000) return 0;  // error
-        if (c < 0x10000) return 1;
-        return 0;  // error
+        return ((comp_t(char_t(c)) < 0x0d800) ? 1 :
+                (comp_t(char_t(c)) < 0x0dc00) ? 2 :
+                (comp_t(char_t(c)) < 0x0e000) ? 0 /* error */ :
+                (comp_t(char_t(c)) < 0x10000) ? 1 :
+                0 /* error */);
     }
 
     template <typename cT>
-    inline size_t utf16::getcodelen32(cT c)
+    inline constexpr size_t utf16::getcodelen32(cT c) noexcept
     {
         return getcodelen(c);
     }
 
     template <typename cT>
-    inline size_t utf16::getcodelen64(cT c)
+    inline constexpr size_t utf16::getcodelen64(cT c) noexcept
     {
         return getcodelen(c);
     }
@@ -1761,7 +1786,7 @@ namespace utfcvt
     /* getcode */
 
     template <typename iT>
-    inline utfcvt_getcres utf16::getcode(iT s, iT e)
+    inline utfcvt_getcres utf16::getcode(iT s, iT e) noexcept
     {
         typedef typename utfcvtimpl::template code_type<iT>::char_t char_t;
 
@@ -1794,19 +1819,19 @@ namespace utfcvt
     }
 
     template <typename sT>
-    inline utfcvt_getcres utf16::getcode(sT* s, size_t n)
+    inline utfcvt_getcres utf16::getcode(sT* s, size_t n) noexcept
     {
         return getcode(s, s + n);
     }
 
     template <typename sT>
-    inline utfcvt_getcres utf16::getcode(sT& s)
+    inline utfcvt_getcres utf16::getcode(sT& s) noexcept
     {
         return getcode(s.begin(), s.end());
     }
 
     template <typename sT>
-    inline utfcvt_getcres utf16::getcode(sT* s)
+    inline utfcvt_getcres utf16::getcode(sT* s) noexcept
     {
         return getcode(s, length(s));
     }
@@ -1814,26 +1839,24 @@ namespace utfcvt
     /* putcodelen */
 
     template <typename cT>
-    inline size_t utf16::putcodelen(cT c_)
+    inline constexpr size_t utf16::putcodelen(cT c) noexcept
     {
         typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
         typedef typename utfcvtimpl::template code_type<cT>::comp_t comp_t;
 
-        comp_t c = char_t(c_);
-
-        if (c < 0x010000) return 1;
-        if (c < 0x110000) return 2;
-        return 0;  // error
+        return ((comp_t(char_t(c)) < 0x010000) ? 1 :
+                (comp_t(char_t(c)) < 0x110000) ? 2 :
+                0 /* error */);
     }
 
     template <typename cT>
-    inline size_t utf16::putcodelen32(cT c)
+    inline constexpr size_t utf16::putcodelen32(cT c) noexcept
     {
         return putcodelen(c);
     }
 
     template <typename cT>
-    inline size_t utf16::putcodelen64(cT c)
+    inline constexpr size_t utf16::putcodelen64(cT c) noexcept
     {
         return putcodelen(c);
     }
@@ -1876,25 +1899,25 @@ namespace utfcvt
     /* to_utf8len */
 
     template <typename iT>
-    inline utfcvt_result utf16::to_utf8len(iT s, iT e)
+    inline utfcvt_result utf16::to_utf8len(iT s, iT e) noexcept
     {
         return count<utf8, utf16, iT>(s, e);
     }
 
     template <typename sT>
-    inline utfcvt_result utf16::to_utf8len(sT* s, size_t n)
+    inline utfcvt_result utf16::to_utf8len(sT* s, size_t n) noexcept
     {
         return to_utf8len(s, s + n);
     }
 
     template <typename sT>
-    inline utfcvt_result utf16::to_utf8len(sT& s)
+    inline utfcvt_result utf16::to_utf8len(sT& s) noexcept
     {
         return to_utf8len(s.begin(), s.end());
     }
 
     template <typename sT>
-    inline utfcvt_result utf16::to_utf8len(sT* s)
+    inline utfcvt_result utf16::to_utf8len(sT* s) noexcept
     {
         return to_utf8len(s, length(s));
     }
@@ -1902,25 +1925,25 @@ namespace utfcvt
     /* to_utf16len */
 
     template <typename iT>
-    inline utfcvt_result utf16::to_utf16len(iT s, iT e)
+    inline utfcvt_result utf16::to_utf16len(iT s, iT e) noexcept
     {
         return count<utf16, utf16, iT>(s, e);
     }
 
     template <typename sT>
-    inline utfcvt_result utf16::to_utf16len(sT* s, size_t n)
+    inline utfcvt_result utf16::to_utf16len(sT* s, size_t n) noexcept
     {
         return to_utf16len(s, s + n);
     }
 
     template <typename sT>
-    inline utfcvt_result utf16::to_utf16len(sT& s)
+    inline utfcvt_result utf16::to_utf16len(sT& s) noexcept
     {
         return to_utf16len(s.begin(), s.end());
     }
 
     template <typename sT>
-    inline utfcvt_result utf16::to_utf16len(sT* s)
+    inline utfcvt_result utf16::to_utf16len(sT* s) noexcept
     {
         return to_utf16len(s, length(s));
     }
@@ -1928,25 +1951,25 @@ namespace utfcvt
     /* to_utf32len */
 
     template <typename iT>
-    inline utfcvt_result utf16::to_utf32len(iT s, iT e)
+    inline utfcvt_result utf16::to_utf32len(iT s, iT e) noexcept
     {
         return count<utf32, utf16, iT>(s, e);
     }
 
     template <typename sT>
-    inline utfcvt_result utf16::to_utf32len(sT* s, size_t n)
+    inline utfcvt_result utf16::to_utf32len(sT* s, size_t n) noexcept
     {
         return to_utf32len(s, s + n);
     }
 
     template <typename sT>
-    inline utfcvt_result utf16::to_utf32len(sT& s)
+    inline utfcvt_result utf16::to_utf32len(sT& s) noexcept
     {
         return to_utf32len(s.begin(), s.end());
     }
 
     template <typename sT>
-    inline utfcvt_result utf16::to_utf32len(sT* s)
+    inline utfcvt_result utf16::to_utf32len(sT* s) noexcept
     {
         return to_utf32len(s, length(s));
     }
@@ -2035,7 +2058,7 @@ namespace utfcvt
 
     /* replacement_character */
 
-    inline std::uint32_t utf32::replacement_character()
+    inline constexpr std::uint32_t utf32::replacement_character() noexcept
     {
         return replace_u32c();
     }
@@ -2043,20 +2066,29 @@ namespace utfcvt
     /* getcodelen */
 
     template <typename cT>
-    inline size_t utf32::getcodelen(cT c_)
+    inline constexpr size_t utf32::getcodelen(cT c) noexcept
     {
         typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
         typedef typename utfcvtimpl::template code_type<cT>::comp_t comp_t;
+        return comp_t(char_t(c)) <= UINT32_C(0xffffffff) ? 1 : 0;
+    }
 
-        comp_t c = char_t(c_);
+    template <typename cT>
+    inline constexpr size_t utf32::getcodelen32(cT c) noexcept
+    {
+        return getcodelen(c);
+    }
 
-        return c <= UINT32_C(0xffffffff) ? 1 : 0;
+    template <typename cT>
+    inline constexpr size_t utf32::getcodelen64(cT c) noexcept
+    {
+        return getcodelen(c);
     }
 
     /* getcode */
 
     template <typename T>
-    inline utfcvt_getcres utf32::getcode(T s, T e)
+    inline utfcvt_getcres utf32::getcode(T s, T e) noexcept
     {
         typedef typename utfcvtimpl::template code_type<T>::char_t char_t;
 
@@ -2069,19 +2101,19 @@ namespace utfcvt
     }
 
     template <typename sT>
-    inline utfcvt_getcres utf32::getcode(sT* s, size_t n)
+    inline utfcvt_getcres utf32::getcode(sT* s, size_t n) noexcept
     {
         return getcode(s, s + n);
     }
 
     template <typename sT>
-    inline utfcvt_getcres utf32::getcode(sT& s)
+    inline utfcvt_getcres utf32::getcode(sT& s) noexcept
     {
         return getcode(s.begin(), s.end());
     }
 
     template <typename sT>
-    inline utfcvt_getcres utf32::getcode(sT* s)
+    inline utfcvt_getcres utf32::getcode(sT* s) noexcept
     {
         return getcode(s, length(s));
     }
@@ -2089,14 +2121,24 @@ namespace utfcvt
     /* putcodelen */
 
     template <typename cT>
-    inline size_t utf32::putcodelen(cT c_)
+    inline constexpr size_t utf32::putcodelen(cT c) noexcept
     {
         typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
         typedef typename utfcvtimpl::template code_type<cT>::comp_t comp_t;
 
-        comp_t c = char_t(c_);
+        return comp_t(char_t(c)) <= UINT32_C(0xffffffff) ? 1 : 0;
+    }
 
-        return c <= UINT32_C(0xffffffff) ? 1 : 0;
+    template <typename cT>
+    inline constexpr size_t utf32::putcodelen32(cT c) noexcept
+    {
+        return putcodelen(c);
+    }
+
+    template <typename cT>
+    inline constexpr size_t utf32::putcodelen64(cT c) noexcept
+    {
+        return putcodelen(c);
     }
 
     /* putcode */
@@ -2132,25 +2174,25 @@ namespace utfcvt
     /* to_utf8len */
 
     template <typename iT>
-    inline utfcvt_result utf32::to_utf8len(iT s, iT e)
+    inline utfcvt_result utf32::to_utf8len(iT s, iT e) noexcept
     {
         return count<utf8, utf32, iT>(s, e);
     }
 
     template <typename sT>
-    inline utfcvt_result utf32::to_utf8len(sT* s, size_t n)
+    inline utfcvt_result utf32::to_utf8len(sT* s, size_t n) noexcept
     {
         return to_utf8len(s, s + n);
     }
 
     template <typename sT>
-    inline utfcvt_result utf32::to_utf8len(sT& s)
+    inline utfcvt_result utf32::to_utf8len(sT& s) noexcept
     {
         return to_utf8len(s.begin(), s.end());
     }
 
     template <typename sT>
-    inline utfcvt_result utf32::to_utf8len(sT* s)
+    inline utfcvt_result utf32::to_utf8len(sT* s) noexcept
     {
         return to_utf8len(s, length(s));
     }
@@ -2158,25 +2200,25 @@ namespace utfcvt
     /* to_utf16len */
 
     template <typename iT>
-    inline utfcvt_result utf32::to_utf16len(iT s, iT e)
+    inline utfcvt_result utf32::to_utf16len(iT s, iT e) noexcept
     {
         return count<utf16, utf32, iT>(s, e);
     }
 
     template <typename sT>
-    inline utfcvt_result utf32::to_utf16len(sT* s, size_t n)
+    inline utfcvt_result utf32::to_utf16len(sT* s, size_t n) noexcept
     {
         return to_utf16len(s, s + n);
     }
 
     template <typename sT>
-    inline utfcvt_result utf32::to_utf16len(sT& s)
+    inline utfcvt_result utf32::to_utf16len(sT& s) noexcept
     {
         return to_utf16len(s.begin(), s.end());
     }
 
     template <typename sT>
-    inline utfcvt_result utf32::to_utf16len(sT* s)
+    inline utfcvt_result utf32::to_utf16len(sT* s) noexcept
     {
         return to_utf16len(s, length(s));
     }
@@ -2184,25 +2226,25 @@ namespace utfcvt
     /* to_utf32len */
 
     template <typename iT>
-    inline utfcvt_result utf32::to_utf32len(iT s, iT e)
+    inline utfcvt_result utf32::to_utf32len(iT s, iT e) noexcept
     {
         return count<utf32, utf32, iT>(s, e);
     }
 
     template <typename sT>
-    inline utfcvt_result utf32::to_utf32len(sT* s, size_t n)
+    inline utfcvt_result utf32::to_utf32len(sT* s, size_t n) noexcept
     {
         return to_utf32len(s, s + n);
     }
 
     template <typename sT>
-    inline utfcvt_result utf32::to_utf32len(sT& s)
+    inline utfcvt_result utf32::to_utf32len(sT& s) noexcept
     {
         return to_utf32len(s.begin(), s.end());
     }
 
     template <typename sT>
-    inline utfcvt_result utf32::to_utf32len(sT* s)
+    inline utfcvt_result utf32::to_utf32len(sT* s) noexcept
     {
         return to_utf32len(s, length(s));
     }
@@ -2292,7 +2334,7 @@ namespace utfcvt
     /* getcodelen */
 
     template <typename cT>
-    inline size_t utf::getcodelen(cT c)
+    inline constexpr size_t utf::getcodelen(cT c) noexcept
     {
         return utfcvtimpl::template utf_class<cT>::getcodelen(c);
     }
@@ -2300,25 +2342,25 @@ namespace utfcvt
     /* getcode */
 
     template <typename iT>
-    inline utfcvt_getcres utf::getcode(iT s, iT e)
+    inline utfcvt_getcres utf::getcode(iT s, iT e) noexcept
     {
         return utfcvtimpl::template utf_class<iT>::getcode(s, e);
     }
 
     template <typename sT>
-    inline utfcvt_getcres utf::getcode(sT* s, size_t n)
+    inline utfcvt_getcres utf::getcode(sT* s, size_t n) noexcept
     {
         return getcode(s, s + n);
     }
 
     template <typename sT>
-    inline utfcvt_getcres utf::getcode(sT& s)
+    inline utfcvt_getcres utf::getcode(sT& s) noexcept
     {
         return getcode(s.begin(), s.end());
     }
 
     template <typename sT>
-    inline utfcvt_getcres utf::getcode(sT* s)
+    inline utfcvt_getcres utf::getcode(sT* s) noexcept
     {
         return getcode(s, length(s));
     }
@@ -2326,7 +2368,7 @@ namespace utfcvt
     /* putcodelen */
 
     template <typename cT>
-    inline size_t utf::putcodelen(cT c)
+    inline constexpr size_t utf::putcodelen(cT c) noexcept
     {
         return utfcvtimpl::template utf_class<cT>::putcodelen(c);
     }
@@ -2342,25 +2384,25 @@ namespace utfcvt
     /* to_utf8len */
 
     template <typename iT>
-    inline utfcvt_result utf::to_utf8len(iT s, iT e)
+    inline utfcvt_result utf::to_utf8len(iT s, iT e) noexcept
     {
         return utfcvtimpl::template utf_class<iT>::to_utf8len(s, e);
     }
 
     template <typename sT>
-    inline utfcvt_result utf::to_utf8len(sT* s, size_t n)
+    inline utfcvt_result utf::to_utf8len(sT* s, size_t n) noexcept
     {
         return utfcvtimpl::template utf_class<sT>::to_utf8len(s, n);
     }
 
     template <typename sT>
-    inline utfcvt_result utf::to_utf8len(sT& s)
+    inline utfcvt_result utf::to_utf8len(sT& s) noexcept
     {
         return to_utf8len(s.begin(), s.end());
     }
 
     template <typename sT>
-    inline utfcvt_result utf::to_utf8len(sT* s)
+    inline utfcvt_result utf::to_utf8len(sT* s) noexcept
     {
         return to_utf8len(s, length(s));
     }
@@ -2368,25 +2410,25 @@ namespace utfcvt
     /* to_utf16len */
 
     template <typename iT>
-    inline utfcvt_result utf::to_utf16len(iT s, iT e)
+    inline utfcvt_result utf::to_utf16len(iT s, iT e) noexcept
     {
         return utfcvtimpl::template utf_class<iT>::to_utf16len(s, e);
     }
 
     template <typename sT>
-    inline utfcvt_result utf::to_utf16len(sT* s, size_t n)
+    inline utfcvt_result utf::to_utf16len(sT* s, size_t n) noexcept
     {
         return utfcvtimpl::template utf_class<sT>::to_utf16len(s, n);
     }
 
     template <typename sT>
-    inline utfcvt_result utf::to_utf16len(sT& s)
+    inline utfcvt_result utf::to_utf16len(sT& s) noexcept
     {
         return to_utf16len(s.begin(), s.end());
     }
 
     template <typename sT>
-    inline utfcvt_result utf::to_utf16len(sT* s)
+    inline utfcvt_result utf::to_utf16len(sT* s) noexcept
     {
         return to_utf16len(s, length(s));
     }
@@ -2394,25 +2436,25 @@ namespace utfcvt
     /* to_utf32len */
 
     template <typename iT>
-    inline utfcvt_result utf::to_utf32len(iT s, iT e)
+    inline utfcvt_result utf::to_utf32len(iT s, iT e) noexcept
     {
         return utfcvtimpl::template utf_class<iT>::to_utf32len(s, e);
     }
 
     template <typename sT>
-    inline utfcvt_result utf::to_utf32len(sT* s, size_t n)
+    inline utfcvt_result utf::to_utf32len(sT* s, size_t n) noexcept
     {
         return utfcvtimpl::template utf_class<sT>::to_utf32len(s, n);
     }
 
     template <typename sT>
-    inline utfcvt_result utf::to_utf32len(sT& s)
+    inline utfcvt_result utf::to_utf32len(sT& s) noexcept
     {
         return to_utf32len(s.begin(), s.end());
     }
 
     template <typename sT>
-    inline utfcvt_result utf::to_utf32len(sT* s)
+    inline utfcvt_result utf::to_utf32len(sT* s) noexcept
     {
         return to_utf32len(s, length(s));
     }
@@ -2498,26 +2540,26 @@ namespace utfcvt
     /* cvtlen */
 
     template <typename dT, typename iT>
-    inline utfcvt_result utf::cvtlen(dT& d, iT s, iT e)
+    inline utfcvt_result utf::cvtlen(dT& d, iT s, iT e) noexcept
     {
         (void)d;
         return utfcvtimpl::template converter<dT>::cvtlen(s, e);
     }
 
     template <typename dT, typename sT>
-    inline utfcvt_result utf::cvtlen(dT& d, sT* s, size_t n)
+    inline utfcvt_result utf::cvtlen(dT& d, sT* s, size_t n) noexcept
     {
         return cvtlen(d, s, s + n);
     }
 
     template <typename dT, typename sT>
-    inline utfcvt_result utf::cvtlen(dT& d, sT& s)
+    inline utfcvt_result utf::cvtlen(dT& d, sT& s) noexcept
     {
         return cvtlen(d, s.begin(), s.end());
     }
 
     template <typename dT, typename sT>
-    inline utfcvt_result utf::cvtlen(dT& d, sT* s)
+    inline utfcvt_result utf::cvtlen(dT& d, sT* s) noexcept
     {
         return cvtlen(d, s, length(s));
     }
@@ -2551,57 +2593,52 @@ namespace utfcvt
     namespace utfcvtimpl
     {
         /*
-         *
+         * bsr
          */
 
         template <typename T>
-        int clzN(T x)
+        inline constexpr int bsr32(T x) noexcept
         {
-            int b = sizeof(T) << 3;
-            int r = 1;
-            T y = 0;
-
-            if ((b >>= 1)) { if (!(y = x >> b)) r += b; else x = y; }
-            if ((b >>= 1)) { if (!(y = x >> b)) r += b; else x = y; }
-            if ((b >>= 1)) { if (!(y = x >> b)) r += b; else x = y; }
-            if ((b >>= 1)) { if (!(y = x >> b)) r += b; else x = y; }
-            if ((b >>= 1)) { if (!(y = x >> b)) r += b; else x = y; }
-            if ((b >>= 1)) { if (!(y = x >> b)) r += b; else x = y; }
-            return r - x;
-        }
-
-        template <typename T>
-        inline int clz32(T t)
-        {
-            std::uint32_t x = uint32_t(t);
-#if utfcvt_compiler_cxx20
-            return std::countl_zero(x);
-#elif utfcvt_compiler_builtin_ia32_lzcnt_u32
-            int r = __builtin_ia32_lzcnt_u32(x);
-            return x ? r : 32;
-#elif utfcvt_compiler_builtin_clz
-            int r = __builtin_clz(x);
-            return x ? r : 32;
-#elif utfcvt_compiler_bsr
-            return 31 - bsr32(t);
-#else /* STD */
-            return clzN(x);
+#if utfcvt_compiler_builtin_clz
+            return !std::uint32_t(x) ? -1 : 31 - __builtin_clz(x);
+#elif utfcvt_compiler_bsr_msvc
+            unsigned long r = (unsigned long)(-1);
+            return (_BitScanReverse(&r, std::uint32_t(x)), int(r));
+#elif utfcvt_compiler_clz
+            return 31 - clz32(std::uint32_t(x));
+#else
+            return 31 - clzN(std::uint32_t(x));
 #endif
         }
 
+        /*
+         * clz
+         */
+
         template <typename T>
-        inline int bsr32(T t)
+        inline constexpr int clzNstep(T x, int r, int b) noexcept
         {
-            std::uint32_t x = uint32_t(t);
-#if utfcvt_compiler_bsr_gnu_asm
-            std::int32_t r = -1;
-            __asm__ ("bsr\t%1,%0": "+r" (r): "r" (x));
-            return int(r);
-#elif utfcvt_compiler_bsr_msvc
-            unsigned long r;
-            return _BitScanReverse(&r, x) ? int(r) : -1;
-#else /* !utfcvt_compiler_bsr */
-            return 31 - clz32(x);
+            return (!b ? r - int(x) : (x >> b) ?
+                    clzNstep(x >> b, r + 0, b >> 1) :
+                    clzNstep(x >> 0, r + b, b >> 1));
+        }
+        template <typename T>
+        constexpr int clzN(T x) noexcept
+        {
+            return clzNstep(x, 1, sizeof(T) << 2);
+        }
+
+        template <typename T>
+        inline constexpr int clz32(T x) noexcept
+        {
+#if utfcvt_compiler_cxx20
+            return std::countl_zero(std::uint32_t(x));
+#elif utfcvt_compiler_builtin_clz
+            return !std::uint32_t(x) ? 32 : __builtin_clz(x);
+#elif utfcvt_compiler_bsr
+            return 31 - bsr32(x);
+#else /* C++ */
+            return clzN(std::uint32_t(x));
 #endif
         }
 
@@ -2611,7 +2648,7 @@ namespace utfcvt
 
         template <typename dT>
         template <typename iT>
-        inline utfcvt_result cvt_utf8<dT>::cvtlen(iT s, iT e)
+        inline utfcvt_result cvt_utf8<dT>::cvtlen(iT s, iT e) noexcept
         {
             return utf_class<iT>::to_utf8len(s, e);
         }
@@ -2629,7 +2666,7 @@ namespace utfcvt
 
         template <typename dT>
         template <typename iT>
-        inline utfcvt_result cvt_utf16<dT>::cvtlen(iT s, iT e)
+        inline utfcvt_result cvt_utf16<dT>::cvtlen(iT s, iT e) noexcept
         {
             return utf_class<iT>::to_utf16len(s, e);
         }
@@ -2647,7 +2684,7 @@ namespace utfcvt
 
         template <typename dT>
         template <typename iT>
-        inline utfcvt_result cvt_utf32<dT>::cvtlen(iT s, iT e)
+        inline utfcvt_result cvt_utf32<dT>::cvtlen(iT s, iT e) noexcept
         {
             return utf_class<iT>::to_utf32len(s, e);
         }
