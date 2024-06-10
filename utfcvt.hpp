@@ -49,6 +49,24 @@
 #endif
 
 /*
+ *
+ */
+
+#include <algorithm>
+#include <cstdint>
+#include <cwchar>
+#include <limits>
+#include <string>
+
+#ifdef _MSC_VER
+#  include <intrin.h>
+#endif
+
+#if utfcvt_compiler_cxx20
+#include <bit>
+#endif
+
+/*
  * constexpr / noexcept
  */
 
@@ -175,6 +193,17 @@
 #endif
 
 /*
+ * countl_zero
+ */
+#ifndef utfcvt_compiler_countl_zero
+#  if __cpp_lib_bitops < 201907L
+#    define utfcvt_compiler_countl_zero  0
+#  else
+#    define utfcvt_compiler_countl_zero  1
+#  endif
+#endif
+
+/*
  * utf8::putcodelen
  */
 #ifndef utfcvt_utf8_putcodelen_mode
@@ -185,24 +214,6 @@
 #  else
 #    define utfcvt_utf8_putcodelen_mode  1
 #  endif
-#endif
-
-/*
- *
- */
-
-#include <algorithm>
-#include <cstdint>
-#include <cwchar>
-#include <limits>
-#include <string>
-
-#ifdef _MSC_VER
-#  include <intrin.h>
-#endif
-
-#if utfcvt_compiler_cxx20
-#include <bit>
 #endif
 
 /*
@@ -1162,7 +1173,7 @@ namespace utfcvt
         template <typename T>
         inline utfcvt_constexpr int clz32(T x) noexcept
         {
-#if utfcvt_compiler_cxx20
+#if utfcvt_compiler_countl_zero
             return std::countl_zero(std::uint32_t(x));
 #elif utfcvt_compiler_builtin_clz
             return !std::uint32_t(x) ? 32 : __builtin_clz(x);
