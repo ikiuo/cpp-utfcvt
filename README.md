@@ -31,6 +31,12 @@ UTF-8/16/32 の相互変換を行うテンプレート ライブラリです。
 // ヌル文字直前までの数 (strlen や wcslen と同様)
 template <typename sT> size_t utflen(sT* s);
 
+// dT 型 に変換 (dT::value_type 型で UTF-8/16/32 を判断)
+template <typename dT, typename iT> dT convert(iT s, iT e);
+template <typename dT, typename sT> dT convert(sT* s, size_t n);
+template <typename dT, typename sT> dT convert(sT& s);
+template <typename dT, typename sT> dT convert(sT* s);
+
 // UTF-8 に変換
 template <typename sT> std::string to_string(sT s);
 template <typename iT> std::string to_string(iT s, iT e);
@@ -287,3 +293,10 @@ typedef utfcvt_getcres (*utfcvt_nextcode)(const void*& s, const void* e);
   - UTF-32 : <code>utf::nextcode&lt;char32_t&gt;</code>
 
 などを代入できます。
+
+nextcode は <code>utfcvt</code> 名前空間のテンプレート関数で使用できます。
+
+```
+template <typename dT> dT convert(utfcvt_nextcode f, const void* s, const void* e);
+template <typename dT> dT convert(utfcvt_nextcode f, const void* s, size_t n);
+```

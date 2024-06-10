@@ -228,6 +228,14 @@ namespace utfcvt
 
     template <typename sT> size_t utflen(sT* s) noexcept;
 
+    template <typename dT, typename iT> dT convert(iT s, iT e);
+    template <typename dT, typename sT> dT convert(sT* s, size_t n);
+    template <typename dT, typename sT> dT convert(sT& s);
+    template <typename dT, typename sT> dT convert(sT* s);
+
+    template <typename dT> dT convert(utfcvt_nextcode f, const void* s, const void* e);
+    template <typename dT> dT convert(utfcvt_nextcode f, const void* s, size_t n);
+
 #if utfcvt_compiler_string
     template <typename sT> std::string to_string(sT s);
     template <typename iT> std::string to_string(iT s, iT e);
@@ -811,6 +819,9 @@ namespace utfcvt
 
         template <typename cT>
         static utfcvt_getcres nextcode(const void*& s, const void* e) noexcept;
+
+        template <typename cT>
+        static utfcvt_getcres nextcode(utfcvt_getcode f, const void*& s, const void* e) noexcept;
     };
 
     /*
@@ -861,10 +872,70 @@ namespace utfcvt
         return replace_u16c();
     }
 
+    /**/
+
     template <typename sT>
     inline size_t utflen(sT* s) noexcept
     {
         return utf::length(s);
+    }
+
+    /**/
+
+    template <typename dT, typename iT>
+    inline dT convert(iT s, iT e)
+    {
+        dT d;
+
+        utf::cvt(d, s, e);
+        return d;
+    }
+
+    template <typename dT, typename sT>
+    inline dT convert(sT* s, size_t n)
+    {
+        dT d;
+
+        utf::cvt(d, s, n);
+        return d;
+    }
+
+    template <typename dT, typename sT>
+    inline dT convert(sT& s)
+    {
+        return convert(s.begin(), s.end());
+    }
+
+    template <typename dT, typename sT>
+    inline dT convert(sT* s)
+    {
+        dT d;
+
+        utf::cvt(d, s, utf::length(s));
+        return d;
+    }
+
+    template <typename dT>
+    inline dT convert(utfcvt_nextcode f, const void* s, const void* e)
+    {
+        typedef typename utfcvtimpl::template code_type<dT>::char_t char_t;
+        char_t replace = utf::replacement_character<char_t>();
+        const void* p = s;
+        dT d;
+
+        while (p < e)
+        {
+            utfcvt_getcres res = f(p, e);
+
+            d += res.success ? char_t(res.code) : replace;
+        }
+        return d;
+    }
+
+    template <typename dT>
+    inline dT convert(utfcvt_nextcode f, const void* s, size_t n)
+    {
+        return convert<dT>(f, s, (const void*)((const uint8_t*)s + n));
     }
 
 #if utfcvt_compiler_string
@@ -872,28 +943,19 @@ namespace utfcvt
     template <typename sT>
     inline std::string to_string(sT s)
     {
-        std::string d;
-
-        utf::cvt(d, s);
-        return d;
+        return convert<std::string>(s);
     }
 
     template <typename iT>
     inline std::string to_string(iT s, iT e)
     {
-        std::string d;
-
-        utf::cvt(d, s, e);
-        return d;
+        return convert<std::string>(s, e);
     }
 
     template <typename sT>
     inline std::string to_string(sT* s, size_t n)
     {
-        std::string d;
-
-        utf::cvt(d, s, n);
-        return d;
+        return convert<std::string>(s, n);
     }
 
 #endif /* utfcvt_compiler_string */
@@ -902,28 +964,19 @@ namespace utfcvt
     template <typename sT>
     inline std::wstring to_wstring(sT s)
     {
-        std::wstring d;
-
-        utf::cvt(d, s);
-        return d;
+        return convert<std::wstring>(s);
     }
 
     template <typename iT>
     inline std::wstring to_wstring(iT s, iT e)
     {
-        std::wstring d;
-
-        utf::cvt(d, s, e);
-        return d;
+        return convert<std::wstring>(s, e);
     }
 
     template <typename sT>
     inline std::wstring to_wstring(sT* s, size_t n)
     {
-        std::wstring d;
-
-        utf::cvt(d, s, n);
-        return d;
+        return convert<std::wstring>(s, n);
     }
 
 #endif /* utfcvt_compiler_wstring */
@@ -932,28 +985,19 @@ namespace utfcvt
     template <typename sT>
     inline std::u8string to_u8string(sT s)
     {
-        std::u8string d;
-
-        utf::cvt(d, s);
-        return d;
+        return convert<std::u8string>(s);
     }
 
     template <typename iT>
     inline std::u8string to_u8string(iT s, iT e)
     {
-        std::u8string d;
-
-        utf::cvt(d, s, e);
-        return d;
+        return convert<std::u8string>(s, e);
     }
 
     template <typename sT>
     inline std::u8string to_u8string(sT* s, size_t n)
     {
-        std::u8string d;
-
-        utf::cvt(d, s, n);
-        return d;
+        return convert<std::u8string>(s, n);
     }
 
 #endif /* utfcvt_compiler_u8string */
@@ -962,28 +1006,19 @@ namespace utfcvt
     template <typename sT>
     inline std::u16string to_u16string(sT s)
     {
-        std::u16string d;
-
-        utf::cvt(d, s);
-        return d;
+        return convert<std::u16string>(s);
     }
 
     template <typename iT>
     inline std::u16string to_u16string(iT s, iT e)
     {
-        std::u16string d;
-
-        utf::cvt(d, s, e);
-        return d;
+        return convert<std::u16string>(s, e);
     }
 
     template <typename sT>
     inline std::u16string to_u16string(sT* s, size_t n)
     {
-        std::u16string d;
-
-        utf::cvt(d, s, n);
-        return d;
+        return convert<std::u16string>(s, n);
     }
 
 #endif /* utfcvt_compiler_u16string */
@@ -992,28 +1027,19 @@ namespace utfcvt
     template <typename sT>
     inline std::u32string to_u32string(sT s)
     {
-        std::u32string d;
-
-        utf::cvt(d, s);
-        return d;
+        return convert<std::u32string>(s);
     }
 
     template <typename iT>
     inline std::u32string to_u32string(iT s, iT e)
     {
-        std::u32string d;
-
-        utf::cvt(d, s, e);
-        return d;
+        return convert<std::u32string>(s, e);
     }
 
     template <typename sT>
     inline std::u32string to_u32string(sT* s, size_t n)
     {
-        std::u32string d;
-
-        utf::cvt(d, s, n);
-        return d;
+        return convert<std::u32string>(s, n);
     }
 
 #endif /* utfcvt_compiler_u32string */
@@ -1552,7 +1578,7 @@ namespace utfcvt
 
             iT p = s;
 
-            if (p == e)
+            if ((e - p) <= 0)
                 return utfcvt_getcres(0, 0);
 
             char_t c = *p++;
@@ -1565,7 +1591,7 @@ namespace utfcvt
             case 2: break;
             }
 
-            if (p == e)
+            if ((e - p) <= 0)
                 return utfcvt_getcres(1, c, false);
 
             char_t d = *p;
@@ -1704,7 +1730,7 @@ namespace utfcvt
         {
             typedef typename utfcvtimpl::template code_type<T>::char_t char_t;
 
-            if (s == e)
+            if ((e - s) <= 0)
                 return utfcvt_getcres(0, 0);
 
             char_t c = char_t(*s);
