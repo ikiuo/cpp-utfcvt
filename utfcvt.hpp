@@ -341,7 +341,8 @@ namespace utfcvt
         template <typename T>
         struct data_type
         {
-            typedef typename T::value_type value_type;
+            typedef typename T::value_type valueT;
+            typedef typename data_type<valueT>::value_type value_type;
             enum { size = sizeof(value_type) };
         };
 
@@ -903,7 +904,7 @@ namespace utfcvt
     template <typename dT, typename sT>
     inline dT convert(sT& s)
     {
-        return convert(s.begin(), s.end());
+        return convert<dT>(s.begin(), s.end());
     }
 
     template <typename dT, typename sT>
@@ -1209,10 +1210,15 @@ namespace utfcvt
         inline utfcvt_result utf_common::copy(dT& d, iT s, iT e)
         {
             typedef typename dT::value_type push_t;
+            typedef typename data_type<push_t>::value_type push_value;
             size_t n = e - s;
 
             for (iT p = s; p != e; ++p)
-                d.push_back(push_t(*p));
+            {
+                push_t v;
+
+                d.push_back((v = push_value(*p)));
+            }
             return utfcvt_result(n, n);
         }
 
@@ -1220,6 +1226,7 @@ namespace utfcvt
         inline utfcvt_result utf_common::degrade(dT& d, iT s, iT e)
         {
             typedef typename dT::value_type push_t;
+            typedef typename data_type<push_t>::value_type push_value;
             typedef typename utfcvtimpl::template code_type<dT>::char_t dchar_t;
             typedef typename utfcvtimpl::template code_type<iT>::char_t schar_t;
 
@@ -1238,7 +1245,11 @@ namespace utfcvt
                     c = schar_t(sizeof(push_t) < 2 ? replace_u8c() : r);
                     b = false;
                 }
-                d.push_back(push_t(c));
+                {
+                    push_t v;
+
+                    d.push_back((v = push_value(c)));
+                }
             }
             return utfcvt_result(n, n, b);
         }
@@ -1473,6 +1484,7 @@ namespace utfcvt
         size_t utf8::putcode(dT& d, cT c_)
         {
             typedef typename dT::value_type push_t;
+            typedef typename data_type<push_t>::value_type push_value;
             typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
 
             char_t c = char_t(c_);
@@ -1484,18 +1496,28 @@ namespace utfcvt
             {
                 if (b < 0)
                     c = utf8::replacement_character();
-                d.push_back(char_t(c));
+                {
+                    push_t v;
+
+                    d.push_back((v = push_value(c)));
+                }
                 return 1;
             }
 
             int s = b * 6;
+            {
+                push_t v;
 
-            d.push_back(push_t((0xff & (int(~0x7f) >> b)) |
-                               ((c >> s) & (0x3f >> b))));
+                v = push_value((0xff & (int(~0x7f) >> b)) |
+                               ((c >> s) & (0x3f >> b)));
+                d.push_back(v);
+            }
             do
             {
+                push_t v;
+
                 s -= 6;
-                d.push_back(push_t(0x80 | ((c >> s) & 0x3f)));
+                d.push_back((v = push_value(0x80 | ((c >> s) & 0x3f))));
             } while (s > 0);
 
             return l;
@@ -1631,6 +1653,7 @@ namespace utfcvt
         inline size_t utf16::putcode(dT& d, cT c_)
         {
             typedef typename dT::value_type push_t;
+            typedef typename data_type<push_t>::value_type push_value;
             typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
 
             char_t c = char_t(c_);
@@ -1639,7 +1662,11 @@ namespace utfcvt
             {
                 if (c > 0xff)
                     c = utf8::replacement_character();
-                d.push_back(push_t(c));
+                {
+                    push_t v;
+
+                    d.push_back((v = push_value(c)));
+                }
                 return 1;
             }
 
@@ -1649,13 +1676,19 @@ namespace utfcvt
             {
                 if (!l)
                     c = char_t(utf16::replacement_character());
-                d.push_back(push_t(c));
+                {
+                    push_t v;
+
+                    d.push_back((v = push_value(c)));
+                }
                 return 1;
             }
             else
             {
-                d.push_back(push_t(0xd800 | ((c - 0x10000) >> 10)));
-                d.push_back(push_t(0xdc00 | (c & 0x03ff)));
+                push_t v;
+
+                d.push_back((v = push_value(0xd800 | ((c - 0x10000) >> 10))));
+                d.push_back((v = push_value(0xdc00 | (c & 0x03ff))));
                 return 2;
             }
         }
@@ -1763,6 +1796,7 @@ namespace utfcvt
         inline size_t utf32::putcode(dT& d, cT c_)
         {
             typedef typename dT::value_type push_t;
+            typedef typename data_type<push_t>::value_type push_value;
             typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
             typedef typename utfcvtimpl::template code_type<cT>::comp_t comp_t;
 
@@ -1783,7 +1817,11 @@ namespace utfcvt
                     c = utf32::replacement_character();
                 break;
             }
-            d.push_back(push_t(c));
+            {
+                push_t v;
+
+                d.push_back((v = push_value(c)));
+            }
             return 1;
         }
 
