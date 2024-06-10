@@ -1241,7 +1241,7 @@ namespace utfcvt
             typedef typename utfcvtimpl::template code_type<dT>::char_t dchar_t;
             typedef typename utfcvtimpl::template code_type<iT>::char_t schar_t;
 
-            schar_t dmax = schar_t(std::numeric_limits<dchar_t>::max());
+            schar_t dmax = schar_t((std::numeric_limits<dchar_t>::max)());
             size_t n = e - s;
             bool b = true;
 
@@ -1308,7 +1308,7 @@ namespace utfcvt
                 r += res.size;
                 p += res.size;
 
-                w += std::max(size_t(1), dU::putcodelen(code));
+                w += (std::max)(size_t(1), dU::putcodelen(code));
             }
             return utfcvt_result(r, w, b);
         }
