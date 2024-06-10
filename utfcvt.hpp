@@ -919,7 +919,7 @@ namespace utfcvt
     inline dT convert(utfcvt_nextcode f, const void* s, const void* e)
     {
         typedef typename utfcvtimpl::template code_type<dT>::char_t char_t;
-        char_t replace = utf::replacement_character<char_t>();
+        utf32_t replace = utf::replacement_character<char_t>();
         const void* p = s;
         dT d;
 
@@ -927,7 +927,7 @@ namespace utfcvt
         {
             utfcvt_getcres res = f(p, e);
 
-            d += res.success ? char_t(res.code) : replace;
+            utf::putcode(d, res.success ? res.code : replace);
         }
         return d;
     }
