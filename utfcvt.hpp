@@ -1211,9 +1211,9 @@ namespace utfcvt
             typedef utfcvtimpl::template code_type<iT> code_stype;
 
             if (int(dU::code_size) != int(sU::code_size))
-                return convert<dU, sU, dT, iT>(d, s, e);
+                return convert<dU, sU>(d, s, e);
             if (int(code_dtype::size) < int(code_stype::size))
-                return degrade<dU, dT, iT>(d, s, e);
+                return degrade<dU>(d, s, e);
             return copy(d, s, e);
         }
 
@@ -1290,7 +1290,7 @@ namespace utfcvt
         {
             if (int(dU::code_size) == int(sU::code_size))
                 return utfcvt_result(e - s, e - s);
-            return cvtlen<dU, sU, iT>(s, e);
+            return cvtlen<dU, sU>(s, e);
         }
 
         template <typename dU, typename sU, typename iT>
@@ -1537,37 +1537,37 @@ namespace utfcvt
         template <typename iT>
         inline utfcvt_result utf8::to_utf8len(iT s, iT e) noexcept
         {
-            return count<utf8, utf8, iT>(s, e);
+            return count<utf8, utf8>(s, e);
         }
 
         template <typename iT>
         inline utfcvt_result utf8::to_utf16len(iT s, iT e) noexcept
         {
-            return count<utf16, utf8, iT>(s, e);
+            return count<utf16, utf8>(s, e);
         }
 
         template <typename iT>
         inline utfcvt_result utf8::to_utf32len(iT s, iT e) noexcept
         {
-            return count<utf32, utf8, iT>(s, e);
+            return count<utf32, utf8>(s, e);
         }
 
         template <typename dT, typename iT>
         inline utfcvt_result utf8::to_utf8(dT& d, iT s, iT e)
         {
-            return append<utf8, utf8, dT, iT>(d, s, e);
+            return append<utf8, utf8>(d, s, e);
         }
 
         template <typename dT, typename iT>
         inline utfcvt_result utf8::to_utf16(dT& d, iT s, iT e)
         {
-            return append<utf16, utf8, dT, iT>(d, s, e);
+            return append<utf16, utf8>(d, s, e);
         }
 
         template <typename dT, typename iT>
         inline utfcvt_result utf8::to_utf32(dT& d, iT s, iT e)
         {
-            return append<utf32, utf8, dT, iT>(d, s, e);
+            return append<utf32, utf8>(d, s, e);
         }
 
         /*
@@ -1707,37 +1707,37 @@ namespace utfcvt
         template <typename iT>
         inline utfcvt_result utf16::to_utf8len(iT s, iT e) noexcept
         {
-            return count<utf8, utf16, iT>(s, e);
+            return count<utf8, utf16>(s, e);
         }
 
         template <typename iT>
         inline utfcvt_result utf16::to_utf16len(iT s, iT e) noexcept
         {
-            return count<utf16, utf16, iT>(s, e);
+            return count<utf16, utf16>(s, e);
         }
 
         template <typename iT>
         inline utfcvt_result utf16::to_utf32len(iT s, iT e) noexcept
         {
-            return count<utf32, utf16, iT>(s, e);
+            return count<utf32, utf16>(s, e);
         }
 
         template <typename dT, typename iT>
         inline utfcvt_result utf16::to_utf8(dT& d, iT s, iT e)
         {
-            return append<utf8, utf16, dT, iT>(d, s, e);
+            return append<utf8, utf16>(d, s, e);
         }
 
         template <typename dT, typename iT>
         inline utfcvt_result utf16::to_utf16(dT& d, iT s, iT e)
         {
-            return append<utf16, utf16, dT, iT>(d, s, e);
+            return append<utf16, utf16>(d, s, e);
         }
 
         template <typename dT, typename iT>
         inline utfcvt_result utf16::to_utf32(dT& d, iT s, iT e)
         {
-            return append<utf32, utf16, dT, iT>(d, s, e);
+            return append<utf32, utf16>(d, s, e);
         }
 
         /*
@@ -1839,37 +1839,37 @@ namespace utfcvt
         template <typename iT>
         inline utfcvt_result utf32::to_utf8len(iT s, iT e) noexcept
         {
-            return count<utf8, utf32, iT>(s, e);
+            return count<utf8, utf32>(s, e);
         }
 
         template <typename iT>
         inline utfcvt_result utf32::to_utf16len(iT s, iT e) noexcept
         {
-            return count<utf16, utf32, iT>(s, e);
+            return count<utf16, utf32>(s, e);
         }
 
         template <typename iT>
         inline utfcvt_result utf32::to_utf32len(iT s, iT e) noexcept
         {
-            return count<utf32, utf32, iT>(s, e);
+            return count<utf32, utf32>(s, e);
         }
 
         template <typename dT, typename iT>
         inline utfcvt_result utf32::to_utf8(dT& d, iT s, iT e)
         {
-            return append<utf8, utf32, dT, iT>(d, s, e);
+            return append<utf8, utf32>(d, s, e);
         }
 
         template <typename dT, typename iT>
         inline utfcvt_result utf32::to_utf16(dT& d, iT s, iT e)
         {
-            return append<utf16, utf32, dT, iT>(d, s, e);
+            return append<utf16, utf32>(d, s, e);
         }
 
         template <typename dT, typename iT>
         inline utfcvt_result utf32::to_utf32(dT& d, iT s, iT e)
         {
-            return append<utf32, utf32, dT, iT>(d, s, e);
+            return append<utf32, utf32>(d, s, e);
         }
 
         /*
