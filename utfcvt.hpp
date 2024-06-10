@@ -42,6 +42,12 @@
 #  define utfcvt_compiler_cxx14  0
 #endif
 
+#if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
+#  define utfcvt_compiler_cxx17  1
+#else  /* C++11 */
+#  define utfcvt_compiler_cxx17  0
+#endif
+
 #if __cplusplus >= 202002L || _MSVC_LANG >= 202002L
 #  define utfcvt_compiler_cxx20  1
 #else  /* C++20 */
@@ -226,8 +232,13 @@ namespace utfcvt
     struct utfcvt_getcres;
     struct utfcvt_result;
 
+#if !utfcvt_compiler_cxx17
     typedef utfcvt_getcres (*utfcvt_getcode)(const void* s, const void* e);
     typedef utfcvt_getcres (*utfcvt_nextcode)(const void*& s, const void* e);
+#else  /* C++17 */
+    typedef utfcvt_getcres (*utfcvt_getcode)(const void* s, const void* e) noexcept;
+    typedef utfcvt_getcres (*utfcvt_nextcode)(const void*& s, const void* e) noexcept;
+#endif
 
     /*
      *
