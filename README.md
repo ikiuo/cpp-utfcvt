@@ -179,7 +179,7 @@ template <typename sT> static utfcvt_getcres getcode(sT* s);
 
 ## メソッド nextcode
 
-指定されたデータ列の先頭から 1 コード分を取得し、引数の位置やサイズなどを変更して返します。
+指定されたデータ列の先頭から 1 コード分を取得し、引数の <code>s</code> やサイズ <code>n</code> を変更して返します。
 
 <code>utfcvt_getcres</code> にはデータ量やエラーが含まれています。
 
