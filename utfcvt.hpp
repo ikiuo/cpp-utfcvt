@@ -321,6 +321,8 @@ namespace utfcvt
         template <typename T> utfcvt_constexpr int clzN(T x) noexcept;
         template <typename T> utfcvt_constexpr int clz32(T t) noexcept;
 
+        /**/
+
         template <typename T>
         struct binary_type
         {
@@ -358,13 +360,16 @@ namespace utfcvt
         template <> struct data_type<unsigned long> : binary_type<unsigned long> {};
         template <> struct data_type<unsigned long long> : binary_type<unsigned long long> {};
 
-        template <typename T> struct data_type<T*> : binary_type<T> {};
+        template <typename T> struct data_type<T*> : data_type<T> {};
+        template <typename T> struct data_type<T[]> : data_type<T> {};
+        template <typename T> struct data_type<T&> : data_type<T> {};
+        template <typename T> struct data_type<const T> : data_type<T> {};
+        template <typename T> struct data_type<volatile T> : data_type<T> {};
 
         template <typename T>
         struct data_type
         {
-            typedef typename T::value_type valueT;
-            typedef typename data_type<valueT>::value_type value_type;
+            typedef typename data_type<typename T::value_type>::value_type value_type;
             enum { size = sizeof(value_type) };
         };
 
@@ -937,6 +942,8 @@ namespace utfcvt
         utf::cvt(d, s, utf::length(s));
         return d;
     }
+
+    /**/
 
     template <typename dT>
     inline dT convert(utfcvt_nextcode f, const void* s, const void* e)
