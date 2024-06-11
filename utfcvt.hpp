@@ -948,7 +948,7 @@ namespace utfcvt
     template <typename dT>
     inline dT convert(utfcvt_nextcode f, const void* s, const void* e)
     {
-        typedef typename utfcvtimpl::template code_type<dT>::char_t char_t;
+        typedef typename utfcvtimpl::code_type<dT>::char_t char_t;
         utf32_t replace = utf::replacement_character<char_t>();
         const void* p = s;
         dT d;
@@ -1225,8 +1225,8 @@ namespace utfcvt
         template <typename dU, typename sU, typename dT, typename iT>
         inline utfcvt_result utf_common::append(dT& d, iT s, iT e)
         {
-            typedef utfcvtimpl::template code_type<dT> code_dtype;
-            typedef utfcvtimpl::template code_type<iT> code_stype;
+            typedef utfcvtimpl::code_type<dT> code_dtype;
+            typedef utfcvtimpl::code_type<iT> code_stype;
 
             if (int(dU::code_size) != int(sU::code_size))
                 return convert<dU, sU>(d, s, e);
@@ -1256,8 +1256,8 @@ namespace utfcvt
         {
             typedef typename dT::value_type push_t;
             typedef typename data_type<push_t>::value_type push_value;
-            typedef typename utfcvtimpl::template code_type<dT>::char_t dchar_t;
-            typedef typename utfcvtimpl::template code_type<iT>::char_t schar_t;
+            typedef typename utfcvtimpl::code_type<dT>::char_t dchar_t;
+            typedef typename utfcvtimpl::code_type<iT>::char_t schar_t;
 
             schar_t dmax = schar_t((std::numeric_limits<dchar_t>::max)());
             size_t n = e - s;
@@ -1345,7 +1345,7 @@ namespace utfcvt
         template <typename cT>
         utfcvt_constexpr size_t utf8::getcodelen(cT c) noexcept
         {
-            typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
+            typedef typename utfcvtimpl::code_type<cT>::char_t char_t;
 
             return ((char_t(c) < 0x80) ? 1 :
                     (char_t(c) < 0xc0) ? 0 /* error */ :
@@ -1380,7 +1380,7 @@ namespace utfcvt
         template <typename cT>
         inline utfcvt_constexpr size_t utf8::getcodelen32(cT c) noexcept
         {
-            typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
+            typedef typename utfcvtimpl::code_type<cT>::char_t char_t;
 
 #if utfcvt_compiler_bsr
             return ((char_t(c) < 0x80) ? 1 :
@@ -1404,7 +1404,7 @@ namespace utfcvt
         template <typename iT>
         utfcvt_getcres utf8::getcode(iT s, iT e) noexcept
         {
-            typedef typename utfcvtimpl::template code_type<iT>::char_t char_t;
+            typedef typename utfcvtimpl::code_type<iT>::char_t char_t;
 
             iT p = s;
 
@@ -1442,8 +1442,8 @@ namespace utfcvt
         template <typename cT>
         utfcvt_constexpr size_t utf8::putcodelen32(cT c) noexcept
         {
-            typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
-            typedef typename utfcvtimpl::template code_type<cT>::comp_t comp_t;
+            typedef typename utfcvtimpl::code_type<cT>::char_t char_t;
+            typedef typename utfcvtimpl::code_type<cT>::comp_t comp_t;
 
             return ((comp_t(char_t(c)) < (1U << +7)) ? 1 :
                     (comp_t(char_t(c)) < (1U << 11)) ? 2 :
@@ -1459,7 +1459,7 @@ namespace utfcvt
         template <typename cT>
         inline utfcvt_constexpr size_t utf8::putcodelen32(cT c) noexcept
         {
-            typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
+            typedef typename utfcvtimpl::code_type<cT>::char_t char_t;
 
             // int n = utfcvtimpl::clz32(char_t(c));
             // if (!n--) return 0;  // error
@@ -1483,7 +1483,7 @@ namespace utfcvt
         template <typename cT>
         inline utfcvt_constexpr size_t utf8::putcodelen32(cT c) noexcept
         {
-            typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
+            typedef typename utfcvtimpl::code_type<cT>::char_t char_t;
 
             static const std::uint8_t table[32+1] = {
                 0,
@@ -1514,7 +1514,7 @@ namespace utfcvt
         {
             typedef typename dT::value_type push_t;
             typedef typename data_type<push_t>::value_type push_value;
-            typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
+            typedef typename utfcvtimpl::code_type<cT>::char_t char_t;
 
             char_t c = char_t(c_);
             size_t l = utf8::putcodelen(c);
@@ -1600,8 +1600,8 @@ namespace utfcvt
         template <typename cT>
         inline utfcvt_constexpr size_t utf16::getcodelen(cT c) noexcept
         {
-            typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
-            typedef typename utfcvtimpl::template code_type<cT>::comp_t comp_t;
+            typedef typename utfcvtimpl::code_type<cT>::char_t char_t;
+            typedef typename utfcvtimpl::code_type<cT>::comp_t comp_t;
 
             return ((comp_t(char_t(c)) < 0x0d800) ? 1 :
                     (comp_t(char_t(c)) < 0x0dc00) ? 2 :
@@ -1625,7 +1625,7 @@ namespace utfcvt
         template <typename iT>
         inline utfcvt_getcres utf16::getcode(iT s, iT e) noexcept
         {
-            typedef typename utfcvtimpl::template code_type<iT>::char_t char_t;
+            typedef typename utfcvtimpl::code_type<iT>::char_t char_t;
 
             iT p = s;
 
@@ -1658,8 +1658,8 @@ namespace utfcvt
         template <typename cT>
         inline utfcvt_constexpr size_t utf16::putcodelen(cT c) noexcept
         {
-            typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
-            typedef typename utfcvtimpl::template code_type<cT>::comp_t comp_t;
+            typedef typename utfcvtimpl::code_type<cT>::char_t char_t;
+            typedef typename utfcvtimpl::code_type<cT>::comp_t comp_t;
 
             return ((comp_t(char_t(c)) < 0x010000) ? 1 :
                     (comp_t(char_t(c)) < 0x110000) ? 2 :
@@ -1683,11 +1683,11 @@ namespace utfcvt
         {
             typedef typename dT::value_type push_t;
             typedef typename data_type<push_t>::value_type push_value;
-            typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
+            typedef typename utfcvtimpl::code_type<cT>::char_t char_t;
 
             char_t c = char_t(c_);
 
-            if (int(utfcvtimpl::template data_type<dT>::size) < 2)
+            if (int(utfcvtimpl::data_type<dT>::size) < 2)
             {
                 if (c > 0xff)
                     c = utf8::replacement_character();
@@ -1770,8 +1770,8 @@ namespace utfcvt
         template <typename cT>
         inline utfcvt_constexpr size_t utf32::getcodelen(cT c) noexcept
         {
-            typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
-            typedef typename utfcvtimpl::template code_type<cT>::comp_t comp_t;
+            typedef typename utfcvtimpl::code_type<cT>::char_t char_t;
+            typedef typename utfcvtimpl::code_type<cT>::comp_t comp_t;
             return comp_t(char_t(c)) <= UINT32_C(0xffffffff) ? 1 : 0;
         }
 
@@ -1790,7 +1790,7 @@ namespace utfcvt
         template <typename T>
         inline utfcvt_getcres utf32::getcode(T s, T e) noexcept
         {
-            typedef typename utfcvtimpl::template code_type<T>::char_t char_t;
+            typedef typename utfcvtimpl::code_type<T>::char_t char_t;
 
             if ((e - s) <= 0)
                 return utfcvt_getcres(0, 0);
@@ -1803,8 +1803,8 @@ namespace utfcvt
         template <typename cT>
         inline utfcvt_constexpr size_t utf32::putcodelen(cT c) noexcept
         {
-            typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
-            typedef typename utfcvtimpl::template code_type<cT>::comp_t comp_t;
+            typedef typename utfcvtimpl::code_type<cT>::char_t char_t;
+            typedef typename utfcvtimpl::code_type<cT>::comp_t comp_t;
 
             return comp_t(char_t(c)) <= UINT32_C(0xffffffff) ? 1 : 0;
         }
@@ -1826,12 +1826,12 @@ namespace utfcvt
         {
             typedef typename dT::value_type push_t;
             typedef typename data_type<push_t>::value_type push_value;
-            typedef typename utfcvtimpl::template code_type<cT>::char_t char_t;
-            typedef typename utfcvtimpl::template code_type<cT>::comp_t comp_t;
+            typedef typename utfcvtimpl::code_type<cT>::char_t char_t;
+            typedef typename utfcvtimpl::code_type<cT>::comp_t comp_t;
 
             comp_t c = char_t(c_);
 
-            switch (int(utfcvtimpl::template code_type<dT>::size))
+            switch (int(utfcvtimpl::code_type<dT>::size))
             {
             case 1:
                 if (c > 0xff)
@@ -1897,67 +1897,67 @@ namespace utfcvt
         template <typename cT>
         inline utfcvt_constexpr cT utf::replacement_character() noexcept
         {
-            return utfcvtimpl::template utf_class<cT>::replacement_character();
+            return utfcvtimpl::utf_class<cT>::replacement_character();
         }
 
         template <typename cT>
         inline utfcvt_constexpr size_t utf::getcodelen(cT c) noexcept
         {
-            return utfcvtimpl::template utf_class<cT>::getcodelen(c);
+            return utfcvtimpl::utf_class<cT>::getcodelen(c);
         }
 
         template <typename iT>
         inline utfcvt_getcres utf::getcode(iT s, iT e) noexcept
         {
-            return utfcvtimpl::template utf_class<iT>::getcode(s, e);
+            return utfcvtimpl::utf_class<iT>::getcode(s, e);
         }
 
         template <typename cT>
         inline utfcvt_constexpr size_t utf::putcodelen(cT c) noexcept
         {
-            return utfcvtimpl::template utf_class<cT>::putcodelen(c);
+            return utfcvtimpl::utf_class<cT>::putcodelen(c);
         }
 
         template <typename dT, typename cT>
         inline size_t utf::putcode(dT& d, cT c)
         {
-            return utfcvtimpl::template utf_class<dT>::putcode(d, c);
+            return utfcvtimpl::utf_class<dT>::putcode(d, c);
         }
 
         template <typename iT>
         inline utfcvt_result utf::to_utf8len(iT s, iT e) noexcept
         {
-            return utfcvtimpl::template utf_class<iT>::to_utf8len(s, e);
+            return utfcvtimpl::utf_class<iT>::to_utf8len(s, e);
         }
 
         template <typename iT>
         inline utfcvt_result utf::to_utf16len(iT s, iT e) noexcept
         {
-            return utfcvtimpl::template utf_class<iT>::to_utf16len(s, e);
+            return utfcvtimpl::utf_class<iT>::to_utf16len(s, e);
         }
 
         template <typename iT>
         inline utfcvt_result utf::to_utf32len(iT s, iT e) noexcept
         {
-            return utfcvtimpl::template utf_class<iT>::to_utf32len(s, e);
+            return utfcvtimpl::utf_class<iT>::to_utf32len(s, e);
         }
 
         template <typename dT, typename iT>
         inline utfcvt_result utf::to_utf8(dT& d, iT s, iT e)
         {
-            return utfcvtimpl::template utf_class<iT>::to_utf8(d, s, e);
+            return utfcvtimpl::utf_class<iT>::to_utf8(d, s, e);
         }
 
         template <typename dT, typename iT>
         inline utfcvt_result utf::to_utf16(dT& d, iT s, iT e)
         {
-            return utfcvtimpl::template utf_class<iT>::to_utf16(d, s, e);
+            return utfcvtimpl::utf_class<iT>::to_utf16(d, s, e);
         }
 
         template <typename dT, typename iT>
         inline utfcvt_result utf::to_utf32(dT& d, iT s, iT e)
         {
-            return utfcvtimpl::template utf_class<iT>::to_utf32(d, s, e);
+            return utfcvtimpl::utf_class<iT>::to_utf32(d, s, e);
         }
 
         /* cvtlen */
@@ -1966,7 +1966,7 @@ namespace utfcvt
         inline utfcvt_result utf::cvtlen(dT& d, iT s, iT e) noexcept
         {
             (void)d;
-            return utfcvtimpl::template converter<dT>::cvtlen(s, e);
+            return utfcvtimpl::converter<dT>::cvtlen(s, e);
         }
 
         template <typename dT, typename sT>
@@ -1992,7 +1992,7 @@ namespace utfcvt
         template <typename dT, typename iT>
         inline utfcvt_result utf::cvt(dT& d, iT s, iT e)
         {
-            return utfcvtimpl::template converter<dT>::cvt(d, s, e);
+            return utfcvtimpl::converter<dT>::cvt(d, s, e);
         }
 
         template <typename dT, typename sT>
