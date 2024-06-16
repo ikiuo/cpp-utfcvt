@@ -298,6 +298,7 @@ namespace utfcvt
         std::uint8_t size;
         utf32_t code;
 
+        utfcvt_getcres() noexcept;
         utfcvt_getcres(size_t s, utf32_t c, bool b = true) noexcept;
     };
 
@@ -307,6 +308,7 @@ namespace utfcvt
         size_t read;
         size_t write;
 
+        utfcvt_result() noexcept;
         utfcvt_result(size_t r, size_t w, bool b = true) noexcept;
     };
 
@@ -1078,6 +1080,14 @@ namespace utfcvt
      * utfcvt_getcres
      */
 
+    inline utfcvt_getcres::utfcvt_getcres() noexcept
+        : success(false)
+        , size(0)
+        , code(0)
+    {
+        /*NOOP*/
+    }
+
     inline utfcvt_getcres::utfcvt_getcres(size_t s, utf32_t c, bool b) noexcept
         : success(b)
         , size(std::uint8_t(s))
@@ -1089,6 +1099,14 @@ namespace utfcvt
     /*
      * utfcvt_result
      */
+
+    inline utfcvt_result::utfcvt_result() noexcept
+        : success(false)
+        , read(0)
+        , write(0)
+    {
+        /*NOOP*/
+    }
 
     inline utfcvt_result::utfcvt_result(size_t r, size_t w, bool b) noexcept
         : success(b)
