@@ -126,7 +126,7 @@
 #  define utfcvt_compiler_char16  utfcvt_compiler_cxx_char16
 #endif
 #ifndef utfcvt_compiler_char32
-#  define utfcvt_compiler_char32  utfcvt_compiler_cxx_char16
+#  define utfcvt_compiler_char32  utfcvt_compiler_cxx_char32
 #endif
 
 #define utfcvt_compiler_cxx_string  utfcvt_compiler_cxx_char
