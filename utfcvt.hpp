@@ -2055,7 +2055,7 @@ namespace utfcvt
         template <typename sT>
         inline utfcvt_getcres utf_method<S>::getcode(sT* s) noexcept
         {
-            return getcode(s, length(s));
+            return getcode(s, utf::length(s));
         }
 
         /* nextcode */
@@ -2085,7 +2085,7 @@ namespace utfcvt
         template <typename sT>
         inline utfcvt_getcres utf_method<S>::nextcode(sT*& s) noexcept
         {
-            size_t n = length(s);
+            size_t n = utf::length(s);
             return nextcode(s, n);
         }
 
@@ -2109,7 +2109,7 @@ namespace utfcvt
         template <typename sT>
         inline utfcvt_result utf_method<S>::to_utf8len(sT* s) noexcept
         {
-            return to_utf8len(s, length(s));
+            return to_utf8len(s, utf::length(s));
         }
 
         /* to_utf16len */
@@ -2132,7 +2132,7 @@ namespace utfcvt
         template <typename sT>
         inline utfcvt_result utf_method<S>::to_utf16len(sT* s) noexcept
         {
-            return to_utf16len(s, length(s));
+            return to_utf16len(s, utf::length(s));
         }
 
         /* to_utf32len */
@@ -2155,7 +2155,7 @@ namespace utfcvt
         template <typename sT>
         inline utfcvt_result utf_method<S>::to_utf32len(sT* s) noexcept
         {
-            return to_utf32len(s, length(s));
+            return to_utf32len(s, utf::length(s));
         }
 
         /* to_utf8 */
@@ -2178,7 +2178,7 @@ namespace utfcvt
         template <typename dT, typename sT>
         inline utfcvt_result utf_method<S>::to_utf8(dT& d, sT* s)
         {
-            return to_utf8(d, s, length(s));
+            return to_utf8(d, s, utf::length(s));
         }
 
         /* to_utf16 */
@@ -2201,7 +2201,7 @@ namespace utfcvt
         template <typename dT, typename sT>
         inline utfcvt_result utf_method<S>::to_utf16(dT& d, sT* s)
         {
-            return to_utf16(d, s, length(s));
+            return to_utf16(d, s, utf::length(s));
         }
 
         /* to_utf32 */
@@ -2224,7 +2224,7 @@ namespace utfcvt
         template <typename dT, typename sT>
         inline utfcvt_result utf_method<S>::to_utf32(dT& d, sT* s)
         {
-            return to_utf32(d, s, length(s));
+            return to_utf32(d, s, utf::length(s));
         }
 
         /*
