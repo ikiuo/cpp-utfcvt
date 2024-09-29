@@ -233,10 +233,8 @@ namespace utfcvt
     struct utfcvt_result;
 
 #if !utfcvt_compiler_cxx17
-    typedef utfcvt_getcres (*utfcvt_getcode)(const void* s, const void* e);
     typedef utfcvt_getcres (*utfcvt_nextcode)(const void*& s, const void* e);
 #else  /* C++17 */
-    typedef utfcvt_getcres (*utfcvt_getcode)(const void* s, const void* e) noexcept;
     typedef utfcvt_getcres (*utfcvt_nextcode)(const void*& s, const void* e) noexcept;
 #endif
 
@@ -849,9 +847,6 @@ namespace utfcvt
 
         template <typename cT>
         static utfcvt_getcres nextcode(const void*& s, const void* e) noexcept;
-
-        template <typename cT>
-        static utfcvt_getcres nextcode(utfcvt_getcode f, const void*& s, const void* e) noexcept;
     };
 
     /*
@@ -1805,10 +1800,10 @@ namespace utfcvt
             return getcodelen(c);
         }
 
-        template <typename T>
-        inline utfcvt_getcres utf32::getcode(T s, T e) noexcept
+        template <typename iT>
+        inline utfcvt_getcres utf32::getcode(iT s, iT e) noexcept
         {
-            typedef typename utfcvtimpl::code_type<T>::char_t char_t;
+            typedef typename utfcvtimpl::code_type<iT>::char_t char_t;
 
             if ((e - s) <= 0)
                 return utfcvt_getcres(0, 0);
@@ -1928,6 +1923,12 @@ namespace utfcvt
         inline utfcvt_getcres utf::getcode(iT s, iT e) noexcept
         {
             return utfcvtimpl::utf_class<iT>::getcode(s, e);
+        }
+
+        template <typename iT>
+        inline utfcvt_getcres utf::nextcode(iT& s, iT e) noexcept
+        {
+            return utfcvtimpl::utf_class<iT>::nextcode(s, e);
         }
 
         template <typename cT>
